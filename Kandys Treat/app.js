@@ -575,20 +575,57 @@ const initCartPage = () => {
       render();
       syncCartBadge();
 
-      if (confirmation && orderIdEl && orderSummaryText) {
-        confirmation.hidden = false;
-        orderIdEl.textContent = order.id;
-        const trackLink = document.getElementById("track-order-link");
-        if (trackLink) {
-          trackLink.href = `track.html?code=${order.id}`;
-          trackLink.hidden = false;
-        }
+     if (confirmation && orderIdEl && orderSummaryText) {
+  confirmation.hidden = false;
+  orderIdEl.textContent = order.id;
 
-        const itemsText = items.map((i) => `${i.qty} × ${i.name}`).join(", ");
-        orderSummaryText.textContent = `${itemsText} • ${formatPrice(total)} • ${
-          fulfilment === "delivery" ? "Delivery" : "Pickup"
-        }`;
+  // Save last order code so user won't lose it on reload
+  localStorage.setItem("kandys_last_order_code", order.id);
+
+  // Build track URL (absolute link, good for copy/share)
+  const trackUrl = `${location.origin}/track.html?code=${encodeURIComponent(order.id)}`;
+
+  // Track link button
+  const trackLinkEl = document.getElementById("track-order-link");
+  if (trackLinkEl) {
+    trackLinkEl.href = `track.html?code=${encodeURIComponent(order.id)}`;
+    trackLinkEl.hidden = false;
+  }
+
+  // Copy code button
+  const copyCodeBtn = document.getElementById("copy-order-code");
+  if (copyCodeBtn) {
+    copyCodeBtn.hidden = false;
+    copyCodeBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(order.id);
+        showToast("Order code copied ✅");
+      } catch {
+        showToast("Copy failed. Please copy manually.");
       }
+    };
+  }
+
+  // Copy tracking link button
+  const copyLinkBtn = document.getElementById("copy-tracking-link");
+  if (copyLinkBtn) {
+    copyLinkBtn.hidden = false;
+    copyLinkBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(trackUrl);
+        showToast("Tracking link copied ✅");
+      } catch {
+        showToast("Copy failed. Please copy manually.");
+      }
+    };
+  }
+
+  const itemsText = items.map((i) => `${i.qty} × ${i.name}`).join(", ");
+  orderSummaryText.textContent = `${itemsText} • ${formatPrice(total)} • ${
+    fulfilment === "delivery" ? "Delivery" : "Pickup"
+  }`;
+}
+
 
       showToast("Order placed successfully");
     }, 600);
@@ -995,32 +1032,36 @@ const initTrackPage = () => {
 
   // Optional: auto-fill from URL like track.html?code=KD-XXXX
   const url = new URL(location.href);
-  const prefill = normalizeCode(url.searchParams.get("code"));
-  if (prefill) input.value = prefill;
+const prefill = normalizeCode(url.searchParams.get("code"));
+if (prefill) input.value = prefill;
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const code = normalizeCode(input.value);
-    if (!code) return;
+// Fallback: if there's no code in the URL, use last saved order code
+const saved = localStorage.getItem("kandys_last_order_code");
+if (!prefill && saved) input.value = normalizeCode(saved);
 
-    setState({ isLoading: true, error: "", showResult: false });
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const code = normalizeCode(input.value);
+  if (!code) return;
 
-    try {
-      const snap = await getDoc(doc(db, "orders", code));
-      if (!snap.exists()) {
-        setState({ isLoading: false, error: "Order not found. Check the code and try again." });
-        return;
-      }
+  setState({ isLoading: true, error: "", showResult: false });
 
-      const order = snap.data();
-      renderOrder(order);
-      setState({ isLoading: false, error: "", showResult: true });
-      showToast("Order found ✅");
-    } catch (err) {
-      console.error(err);
-      setState({ isLoading: false, error: err.message || "Failed to fetch order." });
+  try {
+    const snap = await getDoc(doc(db, "orders", code));
+    if (!snap.exists()) {
+      setState({ isLoading: false, error: "Order not found. Check the code and try again." });
+      return;
     }
-  });
+
+    const order = snap.data();
+    renderOrder(order);
+    setState({ isLoading: false, error: "", showResult: true });
+    showToast("Order found ✅");
+  } catch (err) {
+    console.error(err);
+    setState({ isLoading: false, error: err.message || "Failed to fetch order." });
+  }
+});
 };
 
 // Reviews slider

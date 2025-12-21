@@ -92,15 +92,27 @@
         <section class="order-confirmation" id="order-confirmation" hidden>
           <h3>Order confirmed!</h3>
 
-          <p>Your order ID is <span id="order-id"></span>.</p>
-          <div id="order-summary-text" class="order-summary-text"></div>
-          <button class="btn btn-outline btn-block" id="track-order-btn">
-          <a id="track-order-link" class="btn btn-outline btn-sm" style="margin-top:10px;" hidden>
-  Track this order
-</a>
+          <p>
+            Your order ID is <strong><span id="order-id"></span></strong>.
+          </p>
 
-          </button>
-        </section>
+          <div id="order-summary-text" class="order-summary-text"></div>
+
+          <div class="confirm-actions">
+            <a id="track-order-link" class="btn btn-outline btn-block" hidden>
+              Track this order
+            </a>
+
+            <button id="copy-order-code" type="button" class="btn btn-outline btn-block" hidden>
+              Copy order code
+            </button>
+
+            <button id="copy-tracking-link" type="button" class="btn btn-outline btn-block" hidden>
+              Copy tracking link
+            </button>
+            </div>
+          </section>
+
       </section>
     </main>
   </div>

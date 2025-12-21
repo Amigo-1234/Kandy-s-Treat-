@@ -1473,3 +1473,11 @@ textarea:focus-visible {
 .track-summary{ padding:12px; }
 .track-summary .row{ display:flex; justify-content:space-between; padding:6px 0; }
 .track-summary .bold{ font-weight:800; }
+.confirm-actions{
+  display:grid;
+  gap:10px;
+  margin-top:12px;
+}
+.confirm-actions .btn{
+  width:100%;
+}
