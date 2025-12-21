@@ -1,0 +1,951 @@
+// app.js (FULL UPDATED)
+
+// Firebase (CDN module imports)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  serverTimestamp,
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  updateDoc,
+  getDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+// Your Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCWDTVJgW5dqcBbnZRb6m_Yz-fB7flO9nU",
+  authDomain: "kandystreat-840b1.firebaseapp.com",
+  projectId: "kandystreat-840b1",
+  storageBucket: "kandystreat-840b1.firebasestorage.app",
+  messagingSenderId: "394965571986",
+  appId: "1:394965571986:web:ce79a02096c2eb2f2b094b",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// Local keys (cart stays localStorage for speed)
+const CART_KEY = "kandys_cart";
+const ORDERS_KEY = "kandys_orders"; // no longer used by admin, but left for now
+
+// Mock menu data
+// TODO: Firestore: fetch menu
+const MENU_ITEMS = [
+  {
+    id: "jollof-rice",
+    name: "Smoky Party Jollof",
+    description: "Firewood-inspired jollof rice with grilled chicken & plantain.",
+    price: 3200,
+    category: "Rice",
+    image:
+      "https://images.pexels.com/photos/1487511/pexels-photo-1487511.jpeg?auto=compress&cs=tinysrgb&w=800",
+    soldOut: false,
+  },
+  {
+    id: "fried-rice",
+    name: "Naija Fried Rice",
+    description: "Colourful fried rice with veggies & grilled chicken.",
+    price: 3100,
+    category: "Rice",
+    image:
+      "https://images.pexels.com/photos/76093/pexels-photo-76093.jpeg?auto=compress&cs=tinysrgb&w=800",
+    soldOut: false,
+  },
+  {
+    id: "stir-spag",
+    name: "Stir Fried Spaghetti",
+    description: "Wok-tossed spaghetti with sausages, peppers & onions.",
+    price: 2900,
+    category: "Pasta",
+    image:
+      "https://images.pexels.com/photos/12737656/pexels-photo-12737656.jpeg?auto=compress&cs=tinysrgb&w=800",
+    soldOut: false,
+  },
+  {
+    id: "pounded-yam",
+    name: "Pounded Yam & Egusi",
+    description: "Soft pounded yam with rich egusi soup & assorted meat.",
+    price: 3800,
+    category: "Swallow",
+    image:
+      "https://images.pexels.com/photos/8963463/pexels-photo-8963463.jpeg?auto=compress&cs=tinysrgb&w=800",
+    soldOut: false,
+  },
+  {
+    id: "rice-beans",
+    name: "Rice & Beans Combo",
+    description: "Steamed white rice with beans sauce & fried plantain.",
+    price: 2600,
+    category: "Rice",
+    image:
+      "https://images.pexels.com/photos/13360123/pexels-photo-13360123.jpeg?auto=compress&cs=tinysrgb&w=800",
+    soldOut: false,
+  },
+  {
+    id: "pastries-box",
+    name: "Pastries Assortment Box",
+    description: "Mix of meat pies, doughnuts, rolls & buns.",
+    price: 2400,
+    category: "Pastries",
+    image:
+      "https://images.pexels.com/photos/13711825/pexels-photo-13711825.jpeg?auto=compress&cs=tinysrgb&w=800",
+    soldOut: false,
+  },
+  {
+    id: "chicken-chips",
+    name: "Chicken & Chips",
+    description: "Crispy fries with spiced fried chicken & house dip.",
+    price: 3400,
+    category: "Grills",
+    image:
+      "https://images.pexels.com/photos/4109990/pexels-photo-4109990.jpeg?auto=compress&cs=tinysrgb&w=800",
+    soldOut: false,
+  },
+  {
+    id: "catfish-soup",
+    name: "Catfish Pepper Soup",
+    description: "Hot, aromatic broth with fresh catfish & herbs.",
+    price: 3800,
+    category: "Soups",
+    image:
+      "https://images.pexels.com/photos/18602040/pexels-photo-18602040/free-photo-of-top-view-of-delicious-fish-stew-served-in-a-casserole-on-a-wooden-table.jpeg?auto=compress&cs=tinysrgb&w=800",
+    soldOut: false,
+  },
+  {
+    id: "bbq-platter",
+    name: "BBQ Platter",
+    description: "Grilled wings, sausages & skewers with fries.",
+    price: 5200,
+    category: "Grills",
+    image:
+      "https://images.pexels.com/photos/1128678/pexels-photo-1128678.jpeg?auto=compress&cs=tinysrgb&w=800",
+    soldOut: true,
+  },
+  {
+    id: "drinks-combo",
+    name: "Drinks Combo",
+    description: "Chilled soft drinks & bottled water for two.",
+    price: 1500,
+    category: "Drinks",
+    image:
+      "https://images.pexels.com/photos/5531529/pexels-photo-5531529.jpeg?auto=compress&cs=tinysrgb&w=800",
+    soldOut: false,
+  },
+];
+
+// Utilities
+const formatPrice = (value) => `₦${Number(value || 0).toLocaleString("en-NG")}`;
+
+const readCart = () => {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveCart = (cart) => {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  syncCartBadge(cart);
+};
+
+const readOrders = () => {
+  try {
+    const raw = localStorage.getItem(ORDERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveOrders = (orders) => {
+  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+};
+
+const syncCartBadge = (cart = readCart()) => {
+  const totalQty = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
+  document.querySelectorAll(".js-cart-count").forEach((el) => {
+    el.textContent = totalQty;
+    el.style.opacity = totalQty > 0 ? "1" : "0";
+  });
+};
+
+const showToast = (message) => {
+  const container = document.querySelector(".toast-container");
+  if (!container) return;
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  container.innerHTML = "";
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(6px)";
+    setTimeout(() => toast.remove(), 200);
+  }, 2000);
+};
+
+const spawnPlusOne = (x, y) => {
+  const bubble = document.createElement("div");
+  bubble.className = "plus-one-bubble";
+  bubble.textContent = "+1";
+  bubble.style.left = `${x}px`;
+  bubble.style.top = `${y}px`;
+  document.body.appendChild(bubble);
+  setTimeout(() => bubble.remove(), 450);
+};
+
+// Menu rendering
+const initMenuPage = () => {
+  const grid = document.getElementById("menu-grid");
+  const tabsContainer = document.getElementById("menu-tabs");
+  const searchInput = document.getElementById("menu-search");
+  const clearBtn = document.getElementById("clear-search");
+  if (!grid || !tabsContainer) return;
+
+  let activeCategory = "All";
+  let queryText = "";
+
+  const categories = ["All", ...Array.from(new Set(MENU_ITEMS.map((m) => m.category)))];
+
+  const renderTabs = () => {
+    tabsContainer.innerHTML = "";
+    categories.forEach((cat) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "menu-tab" + (cat === activeCategory ? " is-active" : "");
+      btn.textContent = cat;
+      btn.addEventListener("click", () => {
+        activeCategory = cat;
+        document
+          .querySelectorAll(".menu-tab")
+          .forEach((el) => el.classList.toggle("is-active", el === btn));
+        renderGrid();
+      });
+      tabsContainer.appendChild(btn);
+    });
+  };
+
+  const renderGrid = () => {
+    grid.innerHTML = "";
+
+    const filtered = MENU_ITEMS.filter((item) => {
+      const matchesCat = activeCategory === "All" || item.category === activeCategory;
+      const matchesQuery =
+        !queryText ||
+        item.name.toLowerCase().includes(queryText) ||
+        item.description.toLowerCase().includes(queryText);
+      return matchesCat && matchesQuery;
+    });
+
+    if (!filtered.length) {
+      const p = document.createElement("p");
+      p.className = "empty-state";
+      p.textContent = "No items match that search yet.";
+      grid.appendChild(p);
+      return;
+    }
+
+    filtered.forEach((item) => {
+      const card = document.createElement("article");
+      card.className = "menu-card glass-card interactive-card";
+      if (item.soldOut) card.classList.add("sold-out");
+
+      const img = document.createElement("div");
+      img.className = "menu-card-image";
+      if (item.image) {
+        img.style.backgroundImage = `url("${item.image}")`;
+        img.style.backgroundSize = "cover";
+        img.style.backgroundPosition = "center";
+      }
+
+      if (item.soldOut) {
+        const badge = document.createElement("span");
+        badge.className = "sold-out-badge";
+        badge.textContent = "Sold out";
+        img.appendChild(badge);
+      }
+
+      const body = document.createElement("div");
+      body.className = "menu-card-body";
+
+      const title = document.createElement("h3");
+      title.textContent = item.name;
+
+      const desc = document.createElement("p");
+      desc.textContent = item.description;
+
+      const meta = document.createElement("div");
+      meta.className = "menu-card-meta";
+
+      const price = document.createElement("span");
+      price.className = "price";
+      price.textContent = formatPrice(item.price);
+
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = item.category;
+
+      meta.append(price, chip);
+
+      const qtyRow = document.createElement("div");
+      qtyRow.className = "qty-row";
+
+      const qtyGroup = document.createElement("div");
+      qtyGroup.className = "qty-group";
+
+      const minus = document.createElement("button");
+      minus.type = "button";
+      minus.className = "qty-btn";
+      minus.textContent = "−";
+
+      const value = document.createElement("span");
+      value.className = "qty-value";
+      value.textContent = "1";
+
+      const plus = document.createElement("button");
+      plus.type = "button";
+      plus.className = "qty-btn";
+      plus.textContent = "+";
+
+      qtyGroup.append(minus, value, plus);
+
+      const addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.className = "btn btn-primary menu-add-btn";
+      addBtn.textContent = item.soldOut ? "Unavailable" : "Add";
+
+      plus.addEventListener("click", () => {
+        value.textContent = String(Number(value.textContent) + 1);
+      });
+      minus.addEventListener("click", () => {
+        const next = Math.max(1, Number(value.textContent) - 1);
+        value.textContent = String(next);
+      });
+
+      if (!item.soldOut) {
+        addBtn.addEventListener("click", (ev) => {
+          const qty = Number(value.textContent) || 1;
+          const curCart = readCart();
+          const existing = curCart[item.id];
+          curCart[item.id] = {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            qty: (existing?.qty || 0) + qty,
+          };
+          saveCart(curCart);
+          showToast(`Added ${qty} × ${item.name} to cart`);
+          const rect = ev.currentTarget.getBoundingClientRect();
+          spawnPlusOne(rect.left + rect.width / 2, rect.top);
+        });
+      }
+
+      qtyRow.append(qtyGroup, addBtn);
+      body.append(title, desc, meta, qtyRow);
+      card.append(img, body);
+      grid.appendChild(card);
+    });
+  };
+
+  setTimeout(() => {
+    renderTabs();
+    renderGrid();
+  }, 450);
+
+  searchInput?.addEventListener("input", (e) => {
+    queryText = e.target.value.toLowerCase().trim();
+    renderGrid();
+  });
+
+  clearBtn?.addEventListener("click", () => {
+    searchInput.value = "";
+    queryText = "";
+    renderGrid();
+  });
+};
+
+// Cart page (UPDATED: creates Firestore order)
+const initCartPage = () => {
+  const itemsContainer = document.getElementById("cart-items");
+  const emptyLabel = document.getElementById("cart-empty");
+  const clearBtn = document.getElementById("clear-cart");
+  const subtotalEl = document.getElementById("summary-subtotal");
+  const deliveryEl = document.getElementById("summary-delivery");
+  const totalEl = document.getElementById("summary-total");
+  const form = document.getElementById("checkout-form");
+  const fulfilmentButtons = document.querySelectorAll(".toggle-option[data-fulfilment]");
+  const addressField = document.getElementById("address-field");
+  const placeBtn = document.getElementById("place-order-btn");
+  const confirmation = document.getElementById("order-confirmation");
+  const orderIdEl = document.getElementById("order-id");
+  const orderSummaryText = document.getElementById("order-summary-text");
+
+  if (!itemsContainer || !subtotalEl) return;
+
+  const DELIVERY_FEE = 800;
+
+  const render = () => {
+    const cart = readCart();
+    const ids = Object.keys(cart);
+    itemsContainer.innerHTML = "";
+    emptyLabel.style.display = ids.length ? "none" : "block";
+
+    let subtotal = 0;
+
+    ids.forEach((id) => {
+      const item = cart[id];
+      subtotal += item.price * item.qty;
+
+      const row = document.createElement("div");
+      row.className = "cart-item";
+
+      const main = document.createElement("div");
+      main.className = "cart-item-main";
+
+      const title = document.createElement("div");
+      title.className = "cart-item-title";
+      title.textContent = item.name;
+
+      const meta = document.createElement("div");
+      meta.className = "cart-item-meta";
+      meta.innerHTML = `<span>${item.qty} × ${formatPrice(item.price)}</span><span>${formatPrice(
+        item.price * item.qty
+      )}</span>`;
+
+      main.append(title, meta);
+
+      const actions = document.createElement("div");
+      actions.className = "cart-item-actions";
+
+      const qtyGroup = document.createElement("div");
+      qtyGroup.className = "qty-group";
+
+      const minus = document.createElement("button");
+      minus.type = "button";
+      minus.className = "qty-btn";
+      minus.textContent = "−";
+
+      const val = document.createElement("span");
+      val.className = "qty-value";
+      val.textContent = String(item.qty);
+
+      const plus = document.createElement("button");
+      plus.type = "button";
+      plus.className = "qty-btn";
+      plus.textContent = "+";
+
+      qtyGroup.append(minus, val, plus);
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "cart-item-remove";
+      remove.textContent = "Remove";
+
+      plus.addEventListener("click", () => {
+        const cartState = readCart();
+        cartState[id].qty += 1;
+        saveCart(cartState);
+        render();
+      });
+
+      minus.addEventListener("click", () => {
+        const cartState = readCart();
+        cartState[id].qty -= 1;
+        if (cartState[id].qty <= 0) delete cartState[id];
+        saveCart(cartState);
+        render();
+      });
+
+      remove.addEventListener("click", () => {
+        const cartState = readCart();
+        delete cartState[id];
+        saveCart(cartState);
+        showToast(`Removed ${item.name} from cart`);
+        render();
+      });
+
+      actions.append(qtyGroup, remove);
+      row.append(main, actions);
+      itemsContainer.appendChild(row);
+
+      requestAnimationFrame(() => {
+        row.style.opacity = "0";
+        row.style.transform = "translateY(6px)";
+        row.style.transition = "opacity 200ms var(--easing-soft), transform 200ms var(--easing-soft)";
+        requestAnimationFrame(() => {
+          row.style.opacity = "1";
+          row.style.transform = "translateY(0)";
+        });
+      });
+    });
+
+    const deliveryFee = ids.length ? DELIVERY_FEE : 0;
+    subtotalEl.textContent = formatPrice(subtotal);
+    deliveryEl.textContent = formatPrice(deliveryFee);
+    totalEl.textContent = formatPrice(subtotal + deliveryFee);
+  };
+
+  clearBtn?.addEventListener("click", () => {
+    saveCart({});
+    render();
+  });
+
+  fulfilmentButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      fulfilmentButtons.forEach((b) => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      const type = btn.dataset.fulfilment;
+      if (type === "pickup") {
+        addressField.style.display = "none";
+        addressField.querySelector("textarea").required = false;
+      } else {
+        addressField.style.display = "block";
+        addressField.querySelector("textarea").required = true;
+      }
+    });
+  });
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const cart = readCart();
+    const ids = Object.keys(cart);
+    if (!ids.length) return showToast("Your cart is empty.");
+    if (!placeBtn) return;
+
+    placeBtn.classList.add("is-loading");
+    placeBtn.disabled = true;
+
+    const data = new FormData(form);
+    const fulfilment =
+      [...fulfilmentButtons].find((b) => b.classList.contains("is-active"))?.dataset.fulfilment ||
+      "delivery";
+
+    const items = ids.map((id) => cart[id]);
+    const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const deliveryFee = fulfilment === "delivery" ? DELIVERY_FEE : 0;
+    const total = subtotal + deliveryFee;
+
+    const order = {
+      id: `KD-${Date.now().toString(36).toUpperCase()}`,
+      createdAt: new Date().toISOString(), // replaced in Firestore with serverTimestamp()
+      customer: {
+        name: data.get("name"),
+        phone: data.get("phone"),
+        address: data.get("address"),
+      },
+      fulfilment,
+      time: data.get("time") || null,
+      notes: data.get("notes") || "",
+      items,
+      subtotal,
+      deliveryFee,
+      total,
+      status: "New",
+    };
+
+    try {
+      await setDoc(doc(db, "orders", order.id), {
+        ...order,
+        createdAt: serverTimestamp(),
+      });
+    } catch (err) {
+      placeBtn.classList.remove("is-loading");
+      placeBtn.disabled = false;
+      showToast("Failed to place order. Check internet & try again.");
+      return;
+    }
+
+    setTimeout(() => {
+      placeBtn.classList.remove("is-loading");
+      placeBtn.disabled = false;
+      saveCart({});
+      render();
+      syncCartBadge();
+
+      if (confirmation && orderIdEl && orderSummaryText) {
+        confirmation.hidden = false;
+        orderIdEl.textContent = order.id;
+        const itemsText = items.map((i) => `${i.qty} × ${i.name}`).join(", ");
+        orderSummaryText.textContent = `${itemsText} • ${formatPrice(total)} • ${
+          fulfilment === "delivery" ? "Delivery" : "Pickup"
+        }`;
+      }
+
+      showToast("Order placed successfully");
+    }, 600);
+  });
+
+  render();
+};
+
+// Admin page (UPDATED: Firebase Auth + Firestore real-time)
+const initAdminPage = () => {
+  const searchInput = document.getElementById("order-search");
+const filterWrap = document.getElementById("status-filters");
+const soundBtn = document.getElementById("toggle-sound");
+const printBtn = document.getElementById("print-receipt");
+
+const statTotal = document.getElementById("stat-total");
+const statNew = document.getElementById("stat-new");
+const statPreparing = document.getElementById("stat-preparing");
+const statCompleted = document.getElementById("stat-completed");
+const statRevenue = document.getElementById("stat-revenue");
+
+let activeFilter = "All";
+let searchQuery = "";
+let soundOn = true;
+
+let lastSeenIds = new Set(); // for "new order" detection
+
+  const loginSection = document.getElementById("admin-login");
+  const panel = document.getElementById("admin-panel");
+  const loginForm = document.getElementById("admin-login-form");
+  const logoutBtn = document.getElementById("admin-logout");
+  const tbody = document.getElementById("orders-tbody");
+  const detailPanel = document.getElementById("order-detail-panel");
+  const emptyDetail = document.getElementById("order-detail-empty");
+  const detailContent = document.getElementById("order-detail-content");
+
+  if (!loginSection || !panel || !tbody || !detailPanel) return;
+
+  const STATE = { selectedOrderId: null, orders: [] };
+  let unsubscribeOrders = null;
+
+const renderTable = () => {
+  const ordersToShow = getFilteredOrders();
+  tbody.innerHTML = "";
+
+  if (!ordersToShow.length) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="5" style="opacity:.7;padding:14px;">No orders match this view.</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  ordersToShow.forEach((order, index) => {
+    const tr = document.createElement("tr");
+    const status = order.status || "New";
+
+    tr.innerHTML = `
+      <td>${order.id}</td>
+      <td>${order.customer?.name || "-"}</td>
+      <td>${formatPrice(order.total || 0)}</td>
+      <td>${order.fulfilment === "delivery" ? "Delivery" : "Pickup"}</td>
+      <td><span class="status-pill status-${toStatusClass(status)}">${status}</span></td>
+    `;
+
+    tr.addEventListener("click", () => {
+      STATE.selectedOrderId = order.id;
+      [...tbody.children].forEach((row) => row.classList.remove("active"));
+      tr.classList.add("active");
+      renderDetail(order);
+    });
+
+    tbody.appendChild(tr);
+    setTimeout(() => tr.classList.add("visible"), 30 * index);
+  });
+};
+
+
+  const renderDetail = (order) => {
+    if (!detailContent || !emptyDetail) return;
+    emptyDetail.style.display = "none";
+    detailContent.hidden = false;
+
+    detailContent.querySelector("[data-detail-id]").textContent = order.id;
+    detailContent.querySelector("[data-detail-name]").textContent = order.customer?.name || "-";
+    detailContent.querySelector("[data-detail-phone]").textContent = order.customer?.phone || "-";
+    detailContent.querySelector("[data-detail-type]").textContent =
+      order.fulfilment === "delivery" ? "Delivery" : "Pickup";
+    detailContent.querySelector("[data-detail-total]").textContent = formatPrice(order.total || 0);
+    detailContent.querySelector("[data-detail-notes]").textContent = order.notes || "None";
+
+    const itemsList = detailContent.querySelector("[data-detail-items]");
+    itemsList.innerHTML = "";
+    (order.items || []).forEach((i) => {
+      const li = document.createElement("li");
+      li.textContent = `${i.qty} × ${i.name}`;
+      itemsList.appendChild(li);
+    });
+
+    detailPanel.querySelectorAll(".chip-status").forEach((btn) => {
+      btn.classList.toggle("chip-glow", btn.dataset.status === order.status);
+    });
+  };
+
+  const bindStatusButtons = () => {
+    detailPanel.querySelectorAll(".chip-status").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = STATE.selectedOrderId;
+        if (!id) return;
+        const status = btn.dataset.status;
+
+        try {
+          await updateDoc(doc(db, "orders", id), { status });
+          showToast(`Order ${id} marked as ${status}`);
+        } catch {
+          showToast("Failed to update status");
+        }
+      });
+    });
+  };
+
+const startOrdersListener = () => {
+  const qy = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+
+  unsubscribeOrders = onSnapshot(
+    qy,
+    (snap) => {
+      const incoming = snap.docs.map((d) => d.data());
+      STATE.orders = incoming;
+
+      computeStats();
+
+      // detect new order
+      const newIds = new Set(incoming.map(o => o.id));
+      let hasNew = false;
+      for (const id of newIds) {
+        if (!lastSeenIds.has(id)) {
+          // ignore first load
+          if (lastSeenIds.size > 0) hasNew = true;
+        }
+      }
+      lastSeenIds = newIds;
+      if (hasNew) {
+        playNewOrderSound();
+        showToast("New order received!");
+      }
+
+      renderTable();
+
+      if (STATE.selectedOrderId) {
+        const current = STATE.orders.find((o) => o.id === STATE.selectedOrderId);
+        if (current) renderDetail(current);
+      }
+    },
+    (err) => {
+      console.error("Orders listener error:", err);
+      showToast(err.message || "Orders listener failed");
+    }
+  );
+  searchInput?.addEventListener("input", (e) => {
+  searchQuery = e.target.value.trim();
+  renderTable();
+});
+
+filterWrap?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-filter]");
+  if (!btn) return;
+
+  activeFilter = btn.dataset.filter;
+  [...filterWrap.querySelectorAll(".chip-filter")].forEach(b =>
+    b.classList.toggle("is-active", b === btn)
+  );
+
+  renderTable();
+});
+
+soundBtn?.addEventListener("click", () => {
+  soundOn = !soundOn;
+  soundBtn.textContent = soundOn ? "Sound: On" : "Sound: Off";
+  showToast(soundOn ? "Sound enabled" : "Sound muted");
+});
+
+printBtn?.addEventListener("click", () => {
+  if (!STATE.selectedOrderId) return showToast("Select an order first.");
+  window.print();
+});
+
+};
+
+
+
+  const stopOrdersListener = () => {
+    if (unsubscribeOrders) unsubscribeOrders();
+    unsubscribeOrders = null;
+  };
+
+  // Login
+  loginForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("admin-email")?.value?.trim();
+    const password = document.getElementById("admin-password")?.value;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      showToast("Signed in");
+    } catch (err) {
+      showToast(err.message || "Login failed");
+    }
+  });
+
+  // Logout
+  logoutBtn?.addEventListener("click", async () => {
+    await signOut(auth);
+  });
+
+  // Auth state + admin role gate
+  onAuthStateChanged(auth, async (user) => {
+    stopOrdersListener();
+    STATE.selectedOrderId = null;
+    STATE.orders = [];
+
+    if (!user) {
+      panel.hidden = true;
+      loginSection.hidden = false;
+      return;
+    }
+
+    const adminSnap = await getDoc(doc(db, "admins", user.uid));
+    if (!adminSnap.exists()) {
+      showToast("Not authorized as admin");
+      await signOut(auth);
+      return;
+
+    }
+
+    loginSection.hidden = true;
+    panel.hidden = false;
+
+    bindStatusButtons();
+    startOrdersListener();
+  });
+
+  const toStatusClass = (s) =>
+  String(s || "New").toLowerCase().replace(/\s+/g, "-");
+
+const isToday = (ts) => {
+  if (!ts) return false;
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+};
+
+const computeStats = () => {
+  const orders = STATE.orders;
+
+  const total = orders.length;
+  const countNew = orders.filter(o => (o.status || "New") === "New").length;
+  const countPrep = orders.filter(o => (o.status || "New") === "Preparing").length;
+  const countComp = orders.filter(o => (o.status || "New") === "Completed").length;
+
+  const revenueToday = orders
+    .filter(o => isToday(o.createdAt))
+    .reduce((sum, o) => sum + Number(o.total || 0), 0);
+
+  if (statTotal) statTotal.textContent = total;
+  if (statNew) statNew.textContent = countNew;
+  if (statPreparing) statPreparing.textContent = countPrep;
+  if (statCompleted) statCompleted.textContent = countComp;
+  if (statRevenue) statRevenue.textContent = formatPrice(revenueToday);
+};
+
+const getFilteredOrders = () => {
+  let list = [...STATE.orders];
+
+  if (activeFilter !== "All") {
+    list = list.filter(o => (o.status || "New") === activeFilter);
+  }
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    list = list.filter(o => {
+      const id = String(o.id || "").toLowerCase();
+      const name = String(o.customer?.name || "").toLowerCase();
+      const phone = String(o.customer?.phone || "").toLowerCase();
+      return id.includes(q) || name.includes(q) || phone.includes(q);
+    });
+  }
+
+  return list;
+};
+
+const playNewOrderSound = () => {
+  if (!soundOn) return;
+  // tiny beep (no file needed)
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.value = 880;
+    g.gain.value = 0.05;
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.start();
+    setTimeout(() => {
+      o.stop();
+      ctx.close();
+    }, 140);
+  } catch {}
+};
+
+};
+
+// Reviews slider
+const initReviewsSlider = () => {
+  const track = document.querySelector(".review-track");
+  const reviews = track ? [...track.querySelectorAll(".review")] : [];
+  const prevBtn = document.querySelector("[data-review-prev]");
+  const nextBtn = document.querySelector("[data-review-next]");
+  if (!reviews.length || !prevBtn || !nextBtn) return;
+
+  let index = 0;
+  const setActive = (i) => {
+    reviews.forEach((r, idx) => r.classList.toggle("active", idx === i));
+    index = i;
+  };
+
+  prevBtn.addEventListener("click", () => {
+    setActive((index - 1 + reviews.length) % reviews.length);
+  });
+  nextBtn.addEventListener("click", () => {
+    setActive((index + 1) % reviews.length);
+  });
+
+  setInterval(() => {
+    setActive((index + 1) % reviews.length);
+  }, 6000);
+};
+
+// Contact form
+const initContactForm = () => {
+  const form = document.getElementById("contact-form");
+  if (!form) return;
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    form.reset();
+    showToast("Message sent. We’ll get back shortly.");
+  });
+};
+
+
+
+// Init
+document.addEventListener("DOMContentLoaded", () => {
+  syncCartBadge();
+  const page = document.documentElement.dataset.page;
+
+  if (page === "menu") initMenuPage();
+  if (page === "cart") initCartPage();
+  if (page === "admin") initAdminPage();
+  if (page === "home") initReviewsSlider();
+  if (page === "contact") initContactForm();
+});
