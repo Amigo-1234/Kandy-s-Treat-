@@ -578,6 +578,12 @@ const initCartPage = () => {
       if (confirmation && orderIdEl && orderSummaryText) {
         confirmation.hidden = false;
         orderIdEl.textContent = order.id;
+        const trackLink = document.getElementById("track-order-link");
+        if (trackLink) {
+          trackLink.href = `track.html?code=${order.id}`;
+          trackLink.hidden = false;
+        }
+
         const itemsText = items.map((i) => `${i.qty} × ${i.name}`).join(", ");
         orderSummaryText.textContent = `${itemsText} • ${formatPrice(total)} • ${
           fulfilment === "delivery" ? "Delivery" : "Pickup"
@@ -897,6 +903,124 @@ const playNewOrderSound = () => {
   } catch {}
 };
 
+};
+// Track page (read order by code)
+const initTrackPage = () => {
+  const form = document.getElementById("track-form");
+  const input = document.getElementById("track-code");
+  const btn = document.getElementById("track-btn");
+  const loading = document.getElementById("track-loading");
+  const errBox = document.getElementById("track-error");
+  const result = document.getElementById("track-result");
+
+  const tId = document.getElementById("t-id");
+  const tStatus = document.getElementById("t-status");
+  const tName = document.getElementById("t-name");
+  const tPhone = document.getElementById("t-phone");
+  const tType = document.getElementById("t-type");
+  const tTime = document.getElementById("t-time");
+  const tItems = document.getElementById("t-items");
+  const tSubtotal = document.getElementById("t-subtotal");
+  const tDelivery = document.getElementById("t-delivery");
+  const tTotal = document.getElementById("t-total");
+
+  const stepsWrap = document.getElementById("track-steps");
+
+  if (!form || !input) return;
+
+  const normalizeCode = (v) => String(v || "").trim().toUpperCase();
+
+  const statusOrder = ["New", "Preparing", "Out", "Completed"];
+  const renderSteps = (status) => {
+    const idx = Math.max(0, statusOrder.indexOf(status));
+    stepsWrap?.querySelectorAll(".step").forEach((el) => {
+      const s = el.dataset.step;
+      const si = statusOrder.indexOf(s);
+      el.classList.toggle("is-active", si === idx);
+      el.classList.toggle("is-done", si < idx);
+    });
+  };
+
+  const fmtTime = (createdAt) => {
+    try {
+      const d = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
+      return d.toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" });
+    } catch {
+      return "—";
+    }
+  };
+
+  const setState = ({ isLoading = false, error = "", showResult = false } = {}) => {
+    loading.hidden = !isLoading;
+    if (btn) btn.disabled = isLoading;
+    if (errBox) {
+      errBox.hidden = !error;
+      errBox.textContent = error || "";
+    }
+    if (result) result.hidden = !showResult;
+  };
+
+  const renderOrder = (order) => {
+    tId.textContent = order.id || "—";
+    tStatus.textContent = order.status || "New";
+    tName.textContent = order.customer?.name || "—";
+    tPhone.textContent = order.customer?.phone || "—";
+    tType.textContent = order.fulfilment === "pickup" ? "Pickup" : "Delivery";
+    tTime.textContent = fmtTime(order.createdAt);
+
+    renderSteps(order.status || "New");
+
+    const items = order.items || [];
+    tItems.innerHTML = "";
+
+    items.forEach((i) => {
+      const row = document.createElement("div");
+      row.className = "track-item-row";
+      row.innerHTML = `
+        <div class="track-item-left">
+          <div class="track-item-name">${i.name}</div>
+          <div class="track-item-sub">${i.qty} × ${formatPrice(i.price)}</div>
+        </div>
+        <div class="track-item-right">
+          <strong>${formatPrice((i.price || 0) * (i.qty || 0))}</strong>
+        </div>
+      `;
+      tItems.appendChild(row);
+    });
+
+    tSubtotal.textContent = formatPrice(order.subtotal || 0);
+    tDelivery.textContent = formatPrice(order.deliveryFee || 0);
+    tTotal.textContent = formatPrice(order.total || 0);
+  };
+
+  // Optional: auto-fill from URL like track.html?code=KD-XXXX
+  const url = new URL(location.href);
+  const prefill = normalizeCode(url.searchParams.get("code"));
+  if (prefill) input.value = prefill;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const code = normalizeCode(input.value);
+    if (!code) return;
+
+    setState({ isLoading: true, error: "", showResult: false });
+
+    try {
+      const snap = await getDoc(doc(db, "orders", code));
+      if (!snap.exists()) {
+        setState({ isLoading: false, error: "Order not found. Check the code and try again." });
+        return;
+      }
+
+      const order = snap.data();
+      renderOrder(order);
+      setState({ isLoading: false, error: "", showResult: true });
+      showToast("Order found ✅");
+    } catch (err) {
+      console.error(err);
+      setState({ isLoading: false, error: err.message || "Failed to fetch order." });
+    }
+  });
 };
 
 // Reviews slider
