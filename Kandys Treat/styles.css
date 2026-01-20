@@ -1541,3 +1541,218 @@ textarea:focus-visible {
   font-size: 12px;
   opacity: 0.6;
 }
+/* ============================= */
+/* TRACK PAGE – APP STYLE */
+/* ============================= */
+
+body[data-page="track"] .page-shell {
+  max-width: none;
+  padding: 0;
+}
+
+body[data-page="track"] .track-card {
+  min-height: 100svh;
+  min-height: 100dvh;
+  border-radius: 0;
+  padding: 18px 16px calc(90px + env(safe-area-inset-bottom));
+}
+
+/* Header */
+.track-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(
+    to bottom,
+    rgba(5,5,9,.96),
+    rgba(5,5,9,.75),
+    transparent
+  );
+  padding: 10px 0 14px;
+}
+
+.track-status-pill {
+  background: rgba(255,59,167,.15);
+  border: 1px solid rgba(255,59,167,.45);
+  box-shadow: 0 0 14px rgba(255,59,167,.4);
+}
+
+/* Meta cards */
+.track-meta.grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.meta-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  background: rgba(255,255,255,.04);
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.meta-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-secondary);
+  margin-bottom: 6px;
+}
+
+.meta-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  opacity: .65;
+}
+
+.meta-value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Timeline – Chowdeck feel */
+.timeline {
+  margin-top: 24px;
+  padding-left: 18px;
+  border-left: 2px solid rgba(255,255,255,.08);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+  opacity: .4;
+}
+
+.timeline-item.is-active,
+.timeline-item.is-done {
+  opacity: 1;
+}
+
+.timeline-item .dot {
+  position: absolute;
+  left: -11px;
+  top: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #333;
+}
+
+.timeline-item.is-done .dot {
+  background: #22c55e;
+  box-shadow: 0 0 10px rgba(34,197,94,.6);
+}
+
+.timeline-item.is-active .dot {
+  background: var(--accent);
+  box-shadow: 0 0 14px rgba(255,59,167,.7);
+}
+
+/* Items */
+.track-items {
+  margin-top: 24px;
+}
+
+.track-item-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px dashed rgba(255,255,255,.1);
+}
+
+.track-item-name {
+  font-weight: 500;
+}
+
+.track-item-sub {
+  font-size: 12px;
+  opacity: .6;
+}
+
+/* Price summary */
+.track-summary {
+  margin-top: 24px;
+  background: rgba(0,0,0,.35);
+  border-radius: 16px;
+}
+
+/* Hide bottom nav for immersive feel */
+body[data-page="track"] .bottom-nav {
+  display: none;
+}
+.order-timeline {
+  position: relative;
+  margin-top: 20px;
+  padding-left: 26px;
+}
+
+.order-timeline::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255,255,255,0.12);
+}
+
+.timeline-item {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 22px;
+  position: relative;
+  opacity: 0.45;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.timeline-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.timeline-icon circle {
+  fill: rgba(255,255,255,0.25);
+}
+
+.timeline-content h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.timeline-content p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Active step */
+.timeline-item.is-active {
+  opacity: 1;
+}
+
+.timeline-item.is-active circle {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 10px rgba(255,59,167,.7));
+}
+
+/* Completed step */
+.timeline-item.is-done {
+  opacity: 1;
+}
+
+.timeline-item.is-done circle {
+  fill: #22c55e;
+  filter: drop-shadow(0 0 10px rgba(34,197,94,.6));
+}

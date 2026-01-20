@@ -8,6 +8,28 @@
 </head>
 
 <body class="page page-track">
+  <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="icon-user" viewBox="0 0 24 24">
+    <path fill="currentColor"
+      d="M12 12a5 5 0 1 0-5-5a5 5 0 0 0 5 5Zm0 2c-4.4 0-8 2.3-8 5v1h16v-1c0-2.7-3.6-5-8-5Z"/>
+  </symbol>
+
+  <symbol id="icon-phone" viewBox="0 0 24 24">
+    <path fill="currentColor"
+      d="M6.6 10.8a15.6 15.6 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.2c1.1.4 2.3.6 3.6.6a1 1 0 0 1 1 1V21a1 1 0 0 1-1 1C10.3 22 2 13.7 2 3a1 1 0 0 1 1-1h4.5a1 1 0 0 1 1 1c0 1.3.2 2.5.6 3.6a1 1 0 0 1-.2 1Z"/>
+  </symbol>
+
+  <symbol id="icon-clock" viewBox="0 0 24 24">
+    <path fill="currentColor"
+      d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 11h5v-2h-4V6h-2v7Z"/>
+  </symbol>
+
+  <symbol id="icon-bag" viewBox="0 0 24 24">
+    <path fill="currentColor"
+      d="M6 7V6a6 6 0 1 1 12 0v1h2v15H4V7Zm2 0h8V6a4 4 0 1 0-8 0Z"/>
+  </symbol>
+</svg>
+
   <div class="page-shell">
 
     <!-- Header -->
@@ -67,63 +89,84 @@
           </div>
 
           <!-- TIMELINE -->
-          <div class="timeline" id="track-steps">
-            <div class="timeline-item" data-step="New">
-              <span class="dot"></span>
-              <div>
-                <strong>Order received</strong>
-                <p>We’ve received your order</p>
-              </div>
-            </div>
+          <div class="order-timeline">
+  <div class="timeline-item is-done">
+    <span class="timeline-icon">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" />
+      </svg>
+    </span>
+    <div class="timeline-content">
+      <h4>Order received</h4>
+      <p>We’ve received your order</p>
+    </div>
+  </div>
 
-            <div class="timeline-item" data-step="Preparing">
-              <span class="dot"></span>
-              <div>
-                <strong>Preparing your order</strong>
-                <p>Your food is being prepared</p>
-              </div>
-            </div>
+  <div class="timeline-item is-active">
+    <span class="timeline-icon">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" />
+      </svg>
+    </span>
+    <div class="timeline-content">
+      <h4>Preparing your order</h4>
+      <p>Your food is being prepared</p>
+    </div>
+  </div>
 
-            <div class="timeline-item" data-step="Out">
-              <span class="dot"></span>
-              <div>
-                <strong>Out for delivery</strong>
-                <p>Rider is on the way</p>
-              </div>
-            </div>
+  <div class="timeline-item">
+    <span class="timeline-icon">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" />
+      </svg>
+    </span>
+    <div class="timeline-content">
+      <h4>Out for delivery</h4>
+      <p>Rider is on the way</p>
+    </div>
+  </div>
 
-            <div class="timeline-item" data-step="Completed">
-              <span class="dot"></span>
-              <div>
-                <strong>Delivered</strong>
-                <p>Order completed</p>
-              </div>
-            </div>
-          </div>
+  <div class="timeline-item">
+    <span class="timeline-icon">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" />
+      </svg>
+    </span>
+    <div class="timeline-content">
+      <h4>Delivered</h4>
+      <p>Order completed</p>
+    </div>
+  </div>
+</div>
 
 
           <!-- META -->
           <div class="track-meta grid">
-            <div class="meta-card">
-              <span class="meta-label">👤 Name</span>
-              <span class="meta-value" id="t-name">—</span>
-            </div>
+  <div class="meta-card">
+    <svg class="meta-icon"><use href="#icon-user"/></svg>
+    <span class="meta-label">Customer</span>
+    <span class="meta-value" id="t-name">—</span>
+  </div>
 
-            <div class="meta-card">
-              <span class="meta-label">📞 Phone</span>
-              <span class="meta-value" id="t-phone">—</span>
-            </div>
+  <div class="meta-card">
+    <svg class="meta-icon"><use href="#icon-phone"/></svg>
+    <span class="meta-label">Phone</span>
+    <span class="meta-value" id="t-phone">—</span>
+  </div>
 
-            <div class="meta-card">
-              <span class="meta-label">🚚 Type</span>
-              <span class="meta-value" id="t-type">—</span>
-            </div>
+  <div class="meta-card">
+    <svg class="meta-icon"><use href="#icon-bag"/></svg>
+    <span class="meta-label">Order Type</span>
+    <span class="meta-value" id="t-type">—</span>
+  </div>
 
-            <div class="meta-card">
-              <span class="meta-label">⏰ Placed</span>
-              <span class="meta-value" id="t-time">—</span>
-            </div>
-          </div>
+  <div class="meta-card">
+    <svg class="meta-icon"><use href="#icon-clock"/></svg>
+    <span class="meta-label">Placed</span>
+    <span class="meta-value" id="t-time">—</span>
+  </div>
+</div>
+
 
 
           <!-- ITEMS -->
