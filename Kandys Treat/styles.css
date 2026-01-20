@@ -1528,3 +1528,18 @@ textarea:focus-visible {
   font-size: 12px;
   opacity: 0.6;
 }
+/* FULLSCREEN TRACK PAGE */
+.page-track .page-shell {
+  max-width: 100%;
+  padding: 16px;
+  margin-bottom: 0;
+}
+
+.page-track .track-card {
+  min-height: calc(100vh - 32px);
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
