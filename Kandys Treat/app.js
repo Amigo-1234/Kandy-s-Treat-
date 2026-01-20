@@ -40,7 +40,9 @@ window.auth = auth; // for debugging
 
 // Local keys (cart stays localStorage for speed)
 const CART_KEY = "kandys_cart";
-const ORDERS_KEY = "kandys_orders"; // no longer used by admin, but left for now
+const ORDERS_KEY = "kandys_orders";
+const ORDER_STATUSES = ["New", "Preparing", "Out", "Completed"];
+ // no longer used by admin, but left for now
 
 // Mock menu data
 // TODO: Firestore: fetch menu
@@ -968,6 +970,9 @@ const initTrackPage = () => {
 
   if (!form || !input) return;
 
+  const ORDER_STATUSES = ["New", "Preparing", "Out", "Completed"];
+  let unsubscribe = null;
+
   const normalizeCode = (v) => String(v || "").trim().toUpperCase();
 
   const setState = ({ isLoading = false, error = "", showResult = false } = {}) => {
@@ -980,38 +985,68 @@ const initTrackPage = () => {
     if (result) result.hidden = !showResult;
   };
 
-  const renderOrder = (order) => {
-    tId.textContent = order.id;
-    tStatus.textContent = order.status || "New";
-    tName.textContent = order.customer?.name || "—";
-    tPhone.textContent = order.customer?.phone || "—";
-    tType.textContent = order.fulfilment === "pickup" ? "Pickup" : "Delivery";
+  const renderTimeline = (status = "New") => {
+    const steps = stepsWrap.querySelectorAll(".step");
+    const activeIndex = ORDER_STATUSES.indexOf(status);
 
-    const d = order.createdAt?.toDate
-      ? order.createdAt.toDate()
-      : new Date(order.createdAt);
-    tTime.textContent = d.toLocaleString("en-NG");
+    steps.forEach((step, index) => {
+      step.classList.remove("is-active", "is-done");
 
-    tItems.innerHTML = "";
-    (order.items || []).forEach((i) => {
-      const row = document.createElement("div");
-      row.className = "track-item-row";
-      row.innerHTML = `
-        <div>
-          <strong>${i.name}</strong><br>
-          ${i.qty} × ${formatPrice(i.price)}
-        </div>
-        <div>${formatPrice(i.price * i.qty)}</div>
-      `;
-      tItems.appendChild(row);
+      if (index < activeIndex) step.classList.add("is-done");
+      if (index === activeIndex) step.classList.add("is-active");
     });
-
-    tSubtotal.textContent = formatPrice(order.subtotal || 0);
-    tDelivery.textContent = formatPrice(order.deliveryFee || 0);
-    tTotal.textContent = formatPrice(order.total || 0);
   };
 
-  // 🔒 SINGLE submit handler
+  const applyTimelineStatus = (status) => {
+  const steps = document.querySelectorAll(".timeline-item");
+
+  steps.forEach(step => {
+    step.classList.remove("is-active");
+    if (step.dataset.status === status) {
+      step.classList.add("is-active");
+    }
+  });
+};
+
+
+  const renderOrder = (order) => {
+  tId.textContent = order.id;
+  tStatus.textContent = order.status || "New";
+  tName.textContent = order.customer?.name || "—";
+  tPhone.textContent = order.customer?.phone || "—";
+  tType.textContent = order.fulfilment === "pickup" ? "Pickup" : "Delivery";
+
+  const d = order.createdAt?.toDate
+    ? order.createdAt.toDate()
+    : new Date(order.createdAt);
+  tTime.textContent = d.toLocaleString("en-NG");
+
+  tItems.innerHTML = "";
+  (order.items || []).forEach((i) => {
+    const row = document.createElement("div");
+    row.className = "track-item-row";
+    row.innerHTML = `
+      <div>
+        <strong>${i.name}</strong><br>
+        ${i.qty} × ${formatPrice(i.price)}
+      </div>
+      <div>${formatPrice(i.price * i.qty)}</div>
+    `;
+    tItems.appendChild(row);
+  });
+
+  tSubtotal.textContent = formatPrice(order.subtotal || 0);
+  tDelivery.textContent = formatPrice(order.deliveryFee || 0);
+  tTotal.textContent = formatPrice(order.total || 0);
+
+  // ✅ THIS LINE MAKES THE GREEN DOT MOVE
+  renderTimeline(order.status || "New");
+
+  applyTimelineStatus(order.status || "New");
+
+};
+
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -1020,23 +1055,34 @@ const initTrackPage = () => {
 
     setState({ isLoading: true, error: "", showResult: false });
 
-    try {
-      const snap = await getDoc(doc(db, "orders", code));
-      if (!snap.exists()) {
-        setState({ isLoading: false, error: "Order not found." });
-        return;
-      }
+    // Stop previous listener
+    if (unsubscribe) unsubscribe();
 
-      renderOrder(snap.data());
-      setState({ isLoading: false, showResult: true });
-      showToast("Order found ✅");
+    try {
+      const ref = doc(db, "orders", code);
+
+      unsubscribe = onSnapshot(
+        ref,
+        (snap) => {
+          if (!snap.exists()) {
+            setState({ isLoading: false, error: "Order not found." });
+            return;
+          }
+
+          renderOrder(snap.data());
+          setState({ isLoading: false, showResult: true });
+        },
+        () => {
+          setState({ isLoading: false, error: "Live update failed." });
+        }
+      );
     } catch (err) {
       console.error(err);
       setState({ isLoading: false, error: "Failed to fetch order." });
     }
   });
 
-  // ✅ Auto-fill & auto-submit SAFELY
+  // Auto-track from URL or last order
   const url = new URL(location.href);
   const codeFromUrl = normalizeCode(url.searchParams.get("code"));
   const saved = localStorage.getItem("kandys_last_order_code");
@@ -1045,9 +1091,22 @@ const initTrackPage = () => {
     input.value = codeFromUrl || saved;
     setTimeout(() => {
       form.dispatchEvent(new Event("submit", { bubbles: true }));
-    }, 100);
+    }, 120);
   }
 };
+
+function renderTimeline(status) {
+  const steps = document.querySelectorAll(".timeline-item");
+
+  steps.forEach(step => {
+    step.classList.remove("is-active");
+
+    if (step.dataset.status === status) {
+      step.classList.add("is-active");
+    }
+  });
+}
+
 
 
 // Reviews slider on home page

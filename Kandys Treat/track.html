@@ -89,51 +89,35 @@
           </div>
 
           <!-- TIMELINE -->
-          <div class="order-timeline">
-  <div class="timeline-item is-done">
-    <span class="timeline-icon">
-      <svg viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" />
-      </svg>
-    </span>
-    <div class="timeline-content">
-      <h4>Order received</h4>
-      <p>We’ve received your order</p>
+<div class="timeline" id="track-steps">
+  <div class="timeline-item" data-status="New">
+    <span class="dot"></span>
+    <div>
+      <strong>Order received</strong>
+      <p>We've received your order</p>
     </div>
   </div>
 
-  <div class="timeline-item is-active">
-    <span class="timeline-icon">
-      <svg viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" />
-      </svg>
-    </span>
-    <div class="timeline-content">
-      <h4>Preparing your order</h4>
+  <div class="timeline-item" data-status="Preparing">
+    <span class="dot"></span>
+    <div>
+      <strong>Preparing your order</strong>
       <p>Your food is being prepared</p>
     </div>
   </div>
 
-  <div class="timeline-item">
-    <span class="timeline-icon">
-      <svg viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" />
-      </svg>
-    </span>
-    <div class="timeline-content">
-      <h4>Out for delivery</h4>
+  <div class="timeline-item" data-status="Out">
+    <span class="dot"></span>
+    <div>
+      <strong>Out for delivery</strong>
       <p>Rider is on the way</p>
     </div>
   </div>
 
-  <div class="timeline-item">
-    <span class="timeline-icon">
-      <svg viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" />
-      </svg>
-    </span>
-    <div class="timeline-content">
-      <h4>Delivered</h4>
+  <div class="timeline-item" data-status="Completed">
+    <span class="dot"></span>
+    <div>
+      <strong>Delivered</strong>
       <p>Order completed</p>
     </div>
   </div>
