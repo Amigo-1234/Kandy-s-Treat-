@@ -35,6 +35,9 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+window.db = db; // for debugging
+window.auth = auth; // for debugging
+
 // Local keys (cart stays localStorage for speed)
 const CART_KEY = "kandys_cart";
 const ORDERS_KEY = "kandys_orders"; // no longer used by admin, but left for now
@@ -812,7 +815,7 @@ printBtn?.addEventListener("click", () => {
   window.print();
 });
 
-};
+  };
 
 
 
@@ -942,6 +945,7 @@ const playNewOrderSound = () => {
 
 };
 // Track page (read order by code)
+// Track page (READ ONLY — no reload)
 const initTrackPage = () => {
   const form = document.getElementById("track-form");
   const input = document.getElementById("track-code");
@@ -960,67 +964,44 @@ const initTrackPage = () => {
   const tSubtotal = document.getElementById("t-subtotal");
   const tDelivery = document.getElementById("t-delivery");
   const tTotal = document.getElementById("t-total");
-
   const stepsWrap = document.getElementById("track-steps");
 
   if (!form || !input) return;
 
   const normalizeCode = (v) => String(v || "").trim().toUpperCase();
 
-  const statusOrder = ["New", "Preparing", "Out", "Completed"];
-  const renderSteps = (status) => {
-    const idx = Math.max(0, statusOrder.indexOf(status));
-    stepsWrap?.querySelectorAll(".step").forEach((el) => {
-      const s = el.dataset.step;
-      const si = statusOrder.indexOf(s);
-      el.classList.toggle("is-active", si === idx);
-      el.classList.toggle("is-done", si < idx);
-    });
-  };
-
-  const fmtTime = (createdAt) => {
-    try {
-      const d = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
-      return d.toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" });
-    } catch {
-      return "—";
-    }
-  };
-
   const setState = ({ isLoading = false, error = "", showResult = false } = {}) => {
-    loading.hidden = !isLoading;
+    if (loading) loading.hidden = !isLoading;
     if (btn) btn.disabled = isLoading;
     if (errBox) {
       errBox.hidden = !error;
-      errBox.textContent = error || "";
+      errBox.textContent = error;
     }
     if (result) result.hidden = !showResult;
   };
 
   const renderOrder = (order) => {
-    tId.textContent = order.id || "—";
+    tId.textContent = order.id;
     tStatus.textContent = order.status || "New";
     tName.textContent = order.customer?.name || "—";
     tPhone.textContent = order.customer?.phone || "—";
     tType.textContent = order.fulfilment === "pickup" ? "Pickup" : "Delivery";
-    tTime.textContent = fmtTime(order.createdAt);
 
-    renderSteps(order.status || "New");
+    const d = order.createdAt?.toDate
+      ? order.createdAt.toDate()
+      : new Date(order.createdAt);
+    tTime.textContent = d.toLocaleString("en-NG");
 
-    const items = order.items || [];
     tItems.innerHTML = "";
-
-    items.forEach((i) => {
+    (order.items || []).forEach((i) => {
       const row = document.createElement("div");
       row.className = "track-item-row";
       row.innerHTML = `
-        <div class="track-item-left">
-          <div class="track-item-name">${i.name}</div>
-          <div class="track-item-sub">${i.qty} × ${formatPrice(i.price)}</div>
+        <div>
+          <strong>${i.name}</strong><br>
+          ${i.qty} × ${formatPrice(i.price)}
         </div>
-        <div class="track-item-right">
-          <strong>${formatPrice((i.price || 0) * (i.qty || 0))}</strong>
-        </div>
+        <div>${formatPrice(i.price * i.qty)}</div>
       `;
       tItems.appendChild(row);
     });
@@ -1030,44 +1011,48 @@ const initTrackPage = () => {
     tTotal.textContent = formatPrice(order.total || 0);
   };
 
-  // Optional: auto-fill from URL like track.html?code=KD-XXXX
-  const url = new URL(location.href);
-const prefill = normalizeCode(url.searchParams.get("code"));
-if (prefill) input.value = prefill;
+  // 🔒 SINGLE submit handler
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-// Fallback: if there's no code in the URL, use last saved order code
-const saved = localStorage.getItem("kandys_last_order_code");
-if (!prefill && saved) input.value = normalizeCode(saved);
+    const code = normalizeCode(input.value);
+    if (!code) return;
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const code = normalizeCode(input.value);
-  if (!code) return;
+    setState({ isLoading: true, error: "", showResult: false });
 
-  setState({ isLoading: true, error: "", showResult: false });
+    try {
+      const snap = await getDoc(doc(db, "orders", code));
+      if (!snap.exists()) {
+        setState({ isLoading: false, error: "Order not found." });
+        return;
+      }
 
-  try {
-    const snap = await getDoc(doc(db, "orders", code));
-    if (!snap.exists()) {
-      setState({ isLoading: false, error: "Order not found. Check the code and try again." });
-      return;
+      renderOrder(snap.data());
+      setState({ isLoading: false, showResult: true });
+      showToast("Order found ✅");
+    } catch (err) {
+      console.error(err);
+      setState({ isLoading: false, error: "Failed to fetch order." });
     }
+  });
 
-    const order = snap.data();
-    renderOrder(order);
-    setState({ isLoading: false, error: "", showResult: true });
-    showToast("Order found ✅");
-  } catch (err) {
-    console.error(err);
-    setState({ isLoading: false, error: err.message || "Failed to fetch order." });
+  // ✅ Auto-fill & auto-submit SAFELY
+  const url = new URL(location.href);
+  const codeFromUrl = normalizeCode(url.searchParams.get("code"));
+  const saved = localStorage.getItem("kandys_last_order_code");
+
+  if (codeFromUrl || saved) {
+    input.value = codeFromUrl || saved;
+    setTimeout(() => {
+      form.dispatchEvent(new Event("submit", { bubbles: true }));
+    }, 100);
   }
-});
 };
 
-// Reviews slider
+
+// Reviews slider on home page
 const initReviewsSlider = () => {
-  const track = document.querySelector(".review-track");
-  const reviews = track ? [...track.querySelectorAll(".review")] : [];
+  const reviews = Array.from(document.querySelectorAll(".review-slide"));
   const prevBtn = document.querySelector("[data-review-prev]");
   const nextBtn = document.querySelector("[data-review-next]");
   if (!reviews.length || !prevBtn || !nextBtn) return;
@@ -1111,6 +1096,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (page === "menu") initMenuPage();
   if (page === "cart") initCartPage();
   if (page === "admin") initAdminPage();
+  if (page === "track") initTrackPage();
   if (page === "home") initReviewsSlider();
   if (page === "contact") initContactForm();
 });

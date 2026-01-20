@@ -9,29 +9,55 @@
 
 <body class="page page-track">
   <div class="page-shell">
+
+    <!-- Header -->
     <header class="section fade-in-up">
       <h1>Track Your Order</h1>
-      <p class="muted">Enter your order code to see live status, items, and price breakdown.</p>
+      <p class="muted">
+        Enter your order code to see live status, timeline, and price breakdown.
+      </p>
     </header>
 
     <main class="section section-stack fade-in-up delay-1">
+
+      <!-- TRACK CARD -->
       <section class="glass-card track-card">
+
+        <!-- FORM -->
         <form id="track-form" class="track-form">
           <div class="field-group">
             <label for="track-code">Order Code</label>
-            <input id="track-code" name="code" placeholder="e.g. KD-8M2KZP" required />
+            <input
+              id="track-code"
+              name="code"
+              placeholder="e.g. KD-8M2KZP"
+              required
+            />
           </div>
-          <button class="btn btn-primary" type="submit" id="track-btn">Track Order</button>
+          <button class="btn btn-primary" type="submit" id="track-btn">
+            Track Order
+          </button>
         </form>
 
+        <!-- LOADING -->
         <div id="track-loading" class="track-loading" hidden>
           <div class="loader"></div>
           <p class="muted">Checking your order…</p>
         </div>
 
+        <!-- ERROR -->
         <div id="track-error" class="track-error" hidden></div>
 
+        <!-- RESULT -->
         <div id="track-result" class="track-result" hidden>
+
+          <!-- ETA CARD (NEW) -->
+          <section class="eta-card">
+            <span class="eta-label">Estimated delivery time</span>
+            <strong id="eta-time">—</strong>
+          </section>
+
+          <!-- ORDER HEADER -->
           <div class="track-top">
             <div>
               <div class="muted">Order</div>
@@ -40,40 +66,91 @@
             <div class="track-status-pill" id="t-status">—</div>
           </div>
 
-          <div class="track-steps" id="track-steps">
-            <div class="step" data-step="New"><span class="dot"></span><span>New</span></div>
-            <div class="step" data-step="Preparing"><span class="dot"></span><span>Preparing</span></div>
-            <div class="step" data-step="Out"><span class="dot"></span><span>Out</span></div>
-            <div class="step" data-step="Completed"><span class="dot"></span><span>Completed</span></div>
+          <!-- TIMELINE -->
+          <div class="timeline" id="track-steps">
+            <div class="timeline-item" data-step="New">
+              <span class="dot"></span>
+              <div>
+                <strong>Order received</strong>
+                <p>We’ve received your order</p>
+              </div>
+            </div>
+
+            <div class="timeline-item" data-step="Preparing">
+              <span class="dot"></span>
+              <div>
+                <strong>Preparing your order</strong>
+                <p>Your food is being prepared</p>
+              </div>
+            </div>
+
+            <div class="timeline-item" data-step="Out">
+              <span class="dot"></span>
+              <div>
+                <strong>Out for delivery</strong>
+                <p>Rider is on the way</p>
+              </div>
+            </div>
+
+            <div class="timeline-item" data-step="Completed">
+              <span class="dot"></span>
+              <div>
+                <strong>Delivered</strong>
+                <p>Order completed</p>
+              </div>
+            </div>
           </div>
 
-          <div class="track-meta">
-            <div><span class="muted">Name:</span> <span id="t-name">—</span></div>
-            <div><span class="muted">Phone:</span> <span id="t-phone">—</span></div>
-            <div><span class="muted">Type:</span> <span id="t-type">—</span></div>
-            <div><span class="muted">Placed:</span> <span id="t-time">—</span></div>
+
+          <!-- META -->
+          <div class="track-meta grid">
+            <div class="meta-card">
+              <span class="meta-label">👤 Name</span>
+              <span class="meta-value" id="t-name">—</span>
+            </div>
+
+            <div class="meta-card">
+              <span class="meta-label">📞 Phone</span>
+              <span class="meta-value" id="t-phone">—</span>
+            </div>
+
+            <div class="meta-card">
+              <span class="meta-label">🚚 Type</span>
+              <span class="meta-value" id="t-type">—</span>
+            </div>
+
+            <div class="meta-card">
+              <span class="meta-label">⏰ Placed</span>
+              <span class="meta-value" id="t-time">—</span>
+            </div>
           </div>
 
+
+          <!-- ITEMS -->
           <div class="track-items">
             <h3>Items</h3>
             <div id="t-items"></div>
           </div>
 
+          <!-- SUMMARY -->
           <div class="track-summary glass-card">
             <div class="row"><span>Subtotal</span><span id="t-subtotal">₦0</span></div>
             <div class="row"><span>Delivery</span><span id="t-delivery">₦0</span></div>
             <div class="row bold"><span>Total</span><span id="t-total">₦0</span></div>
           </div>
+
         </div>
       </section>
     </main>
   </div>
 
+  <!-- BOTTOM NAV -->
   <nav class="bottom-nav glass-card">
     <a href="index.html" class="bottom-nav-item"><span>Home</span></a>
     <a href="menu.html" class="bottom-nav-item"><span>Menu</span></a>
     <a href="cart.html" class="bottom-nav-item">
-      <span>Cart</span><span class="bottom-nav-badge js-cart-count">0</span>
+      <span>Cart</span>
+      <span class="bottom-nav-badge js-cart-count">0</span>
     </a>
     <a href="track.html" class="bottom-nav-item is-active"><span>Track</span></a>
   </nav>
