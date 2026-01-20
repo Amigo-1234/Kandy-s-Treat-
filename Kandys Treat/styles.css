@@ -41,24 +41,37 @@ html,
 body {
   margin: 0;
   padding: 0;
-  height: 100%;
+  width: 100%;
+  min-height: 100%;
   scroll-behavior: smooth;
+}
+
+/* iOS Safari viewport fix */
+body {
+  min-height: 100vh;   /* fallback */
+  min-height: 100svh;  /* iOS small viewport */
+  min-height: 100dvh;  /* iOS dynamic viewport */
+  overflow-x: hidden;
 }
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", "Poppins",
     "Plus Jakarta Sans", sans-serif;
-  background: radial-gradient(circle at top, #161626 0, #050509 55%, #000 100%);
+    background: radial-gradient(circle at top, #161626 0, #050509 55%,
+   #000 100%);
+    background-attachment: fixed;
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
+
 }
 
 /* Layout shell */
 .page-shell {
   max-width: 1120px;
-  margin: 0 auto 72px;
-  padding: 18px 16px 90px;
+  margin: 0 auto;
+  padding: 18px 16px calc(90px + env(safe-area-inset-bottom));
 }
+
 
 /* Sections */
 .section {
@@ -1527,19 +1540,4 @@ textarea:focus-visible {
 .track-item-sub {
   font-size: 12px;
   opacity: 0.6;
-}
-/* FULLSCREEN TRACK PAGE */
-.page-track .page-shell {
-  max-width: 100%;
-  padding: 16px;
-  margin-bottom: 0;
-}
-
-.page-track .track-card {
-  min-height: calc(100vh - 32px);
-  border-radius: 0;
-  box-shadow: none;
-  border: none;
-  background: transparent;
-  padding: 0;
 }
