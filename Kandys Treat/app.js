@@ -847,30 +847,34 @@ printBtn?.addEventListener("click", () => {
 
   // Auth state + admin role gate
   onAuthStateChanged(auth, async (user) => {
-    stopOrdersListener();
-    STATE.selectedOrderId = null;
-    STATE.orders = [];
+  stopOrdersListener();
 
-    if (!user) {
-      panel.hidden = true;
-      loginSection.hidden = false;
-      return;
-    }
+  if (!user) {
+    panel.hidden = true;
+    loginSection.hidden = false;
+    return;
+  }
 
-    const adminSnap = await getDoc(doc(db, "admins", user.uid));
-    if (!adminSnap.exists()) {
-      showToast("Not authorized as admin");
-      await signOut(auth);
-      return;
+  const adminSnap = await getDoc(doc(db, "admins", user.uid));
+  if (!adminSnap.exists()) {
+    showToast("Not authorized as admin");
+    await signOut(auth);
+    return;
+  }
 
-    }
+  // ✅ AUTH CONFIRMED
+  loginSection.hidden = true;
+  panel.hidden = false;
 
-    loginSection.hidden = true;
-    panel.hidden = false;
+  bindStatusButtons();
+  startOrdersListener();
 
-    bindStatusButtons();
-    startOrdersListener();
-  });
+  // 🔥 START FOOD MANAGEMENT ONLY NOW
+  if (window.initFoodManagement) {
+    window.initFoodManagement();
+  }
+});
+
 
   const toStatusClass = (s) =>
   String(s || "New").toLowerCase().replace(/\s+/g, "-");

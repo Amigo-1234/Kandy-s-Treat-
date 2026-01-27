@@ -5,6 +5,8 @@
   <title>Admin | Kandys Treats Eatery</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="styles.css" rel="stylesheet" />
+  <link href="admin.css" rel="stylesheet" />
+
 </head>
 <body class="page page-admin">
   <div class="page-shell">
@@ -35,7 +37,7 @@
       </section>
 
       <!-- Orders table -->
-      <section class="glass-card admin-panel" id="admin-panel" hidden>
+      <div class="glass-card admin-panel" id="admin-panel" hidden>
       
               <div class="admin-panel-header">
         <div>
@@ -86,7 +88,7 @@
         </div>
       </div>
 
-
+      <div class="admin-main-layout">
         <div class="table-wrapper">
           <table class="orders-table">
             <thead>
@@ -132,7 +134,61 @@
             </div>
           </div>
         </aside>
+       </div>
       </section>
+
+      <!-- Food Management -->
+<section class="glass-card menu-builder">
+  <div class="section-header inline">
+    <div>
+      <h2>Menu Builder</h2>
+      <p class="muted">Organize menu sections and items</p>
+    </div>
+    <button class="btn btn-primary btn-sm">+ Add Menu Section</button>
+  </div>
+
+  <div class="menu-builder-layout">
+    <!-- LEFT: SECTIONS -->
+    <aside class="menu-sections">
+      <button class="menu-section is-active">Rice Dishes</button>
+      <button class="menu-section">Proteins</button>
+      <button class="menu-section">Shawarma</button>
+      <button class="menu-section">Drinks</button>
+      <button class="menu-section">Sides</button>
+    </aside>
+
+    <!-- RIGHT: ITEMS -->
+    <div class="menu-items">
+      <div class="menu-items-header">
+        <h3>Rice Dishes</h3>
+        <button class="btn btn-outline btn-sm">+ Add Item</button>
+      </div>
+
+      <ul class="menu-item-list">
+        <li class="menu-item-row">
+          <span>Jollof Rice</span>
+          <span>₦500 / scoop</span>
+          <span class="status-pill status-Available">Available</span>
+        </li>
+
+        <li class="menu-item-row">
+          <span>Fried Rice</span>
+          <span>₦500 / scoop</span>
+          <span class="status-pill status-Available">Available</span>
+        </li>
+
+        <li class="menu-item-row">
+          <span>Ofada Rice</span>
+          <span>₦700 / scoop</span>
+          <span class="status-pill status-Out">Out</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+
     </main>
   </div>
 
@@ -154,6 +210,7 @@
 
   <div class="toast-container" aria-live="polite" aria-atomic="true"></div>
   <script src="app.js" type="module"></script>
+  <script src="js/admin.js"></script>
 </body>
 </html>
 
