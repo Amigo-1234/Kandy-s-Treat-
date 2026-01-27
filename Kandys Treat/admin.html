@@ -144,46 +144,42 @@
       <h2>Menu Builder</h2>
       <p class="muted">Organize menu sections and items</p>
     </div>
-    <button class="btn btn-primary btn-sm">+ Add Menu Section</button>
+    <button id="add-menu-section" 
+      class="btn btn-primary btn-sm">
+      + Add Menu Section
+    </button>
+
   </div>
 
   <div class="menu-builder-layout">
     <!-- LEFT: SECTIONS -->
-    <aside class="menu-sections">
-      <button class="menu-section is-active">Rice Dishes</button>
-      <button class="menu-section">Proteins</button>
-      <button class="menu-section">Shawarma</button>
-      <button class="menu-section">Drinks</button>
-      <button class="menu-section">Sides</button>
-    </aside>
+    <aside class="menu-sections" id="menu-sections"></aside>
+
 
     <!-- RIGHT: ITEMS -->
     <div class="menu-items">
-      <div class="menu-items-header">
-        <h3>Rice Dishes</h3>
-        <button class="btn btn-outline btn-sm">+ Add Item</button>
-      </div>
+  <div class="menu-items-header">
+    <h3 id="active-menu-title">Rice Dishes</h3>
+    <button class="btn btn-outline btn-sm" id="add-menu-item">
+      + Add Item
+    </button>
+  </div>
 
-      <ul class="menu-item-list">
-        <li class="menu-item-row">
-          <span>Jollof Rice</span>
-          <span>₦500 / scoop</span>
-          <span class="status-pill status-Available">Available</span>
-        </li>
+  <table class="menu-table">
+    <thead>
+      <tr>
+        <th>Dish</th>
+        <th>Price</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="menu-item-list">
+      <!-- rows injected by JS -->
+    </tbody>
+  </table>
+</div>
 
-        <li class="menu-item-row">
-          <span>Fried Rice</span>
-          <span>₦500 / scoop</span>
-          <span class="status-pill status-Available">Available</span>
-        </li>
-
-        <li class="menu-item-row">
-          <span>Ofada Rice</span>
-          <span>₦700 / scoop</span>
-          <span class="status-pill status-Out">Out</span>
-        </li>
-      </ul>
-    </div>
   </div>
 </section>
 
@@ -210,7 +206,7 @@
 
   <div class="toast-container" aria-live="polite" aria-atomic="true"></div>
   <script src="app.js" type="module"></script>
-  <script src="js/admin.js"></script>
+  <script src="js/admin.js" type="module"></script>
 </body>
 </html>
 

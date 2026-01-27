@@ -46,108 +46,8 @@ const ORDER_STATUSES = ["New", "Preparing", "Out", "Completed"];
 
 // Mock menu data
 // TODO: Firestore: fetch menu
-const MENU_ITEMS = [
-  {
-    id: "jollof-rice",
-    name: "Smoky Party Jollof",
-    description: "Firewood-inspired jollof rice with grilled chicken & plantain.",
-    price: 3200,
-    category: "Rice",
-    image:
-      "https://images.pexels.com/photos/1487511/pexels-photo-1487511.jpeg?auto=compress&cs=tinysrgb&w=800",
-    soldOut: false,
-  },
-  {
-    id: "fried-rice",
-    name: "Naija Fried Rice",
-    description: "Colourful fried rice with veggies & grilled chicken.",
-    price: 3100,
-    category: "Rice",
-    image:
-      "https://images.pexels.com/photos/76093/pexels-photo-76093.jpeg?auto=compress&cs=tinysrgb&w=800",
-    soldOut: false,
-  },
-  {
-    id: "stir-spag",
-    name: "Stir Fried Spaghetti",
-    description: "Wok-tossed spaghetti with sausages, peppers & onions.",
-    price: 2900,
-    category: "Pasta",
-    image:
-      "https://images.pexels.com/photos/12737656/pexels-photo-12737656.jpeg?auto=compress&cs=tinysrgb&w=800",
-    soldOut: false,
-  },
-  {
-    id: "pounded-yam",
-    name: "Pounded Yam & Egusi",
-    description: "Soft pounded yam with rich egusi soup & assorted meat.",
-    price: 3800,
-    category: "Swallow",
-    image:
-      "https://images.pexels.com/photos/8963463/pexels-photo-8963463.jpeg?auto=compress&cs=tinysrgb&w=800",
-    soldOut: false,
-  },
-  {
-    id: "rice-beans",
-    name: "Rice & Beans Combo",
-    description: "Steamed white rice with beans sauce & fried plantain.",
-    price: 2600,
-    category: "Rice",
-    image:
-      "https://images.pexels.com/photos/13360123/pexels-photo-13360123.jpeg?auto=compress&cs=tinysrgb&w=800",
-    soldOut: false,
-  },
-  {
-    id: "pastries-box",
-    name: "Pastries Assortment Box",
-    description: "Mix of meat pies, doughnuts, rolls & buns.",
-    price: 2400,
-    category: "Pastries",
-    image:
-      "https://images.pexels.com/photos/13711825/pexels-photo-13711825.jpeg?auto=compress&cs=tinysrgb&w=800",
-    soldOut: false,
-  },
-  {
-    id: "chicken-chips",
-    name: "Chicken & Chips",
-    description: "Crispy fries with spiced fried chicken & house dip.",
-    price: 3400,
-    category: "Grills",
-    image:
-      "https://images.pexels.com/photos/4109990/pexels-photo-4109990.jpeg?auto=compress&cs=tinysrgb&w=800",
-    soldOut: false,
-  },
-  {
-    id: "catfish-soup",
-    name: "Catfish Pepper Soup",
-    description: "Hot, aromatic broth with fresh catfish & herbs.",
-    price: 3800,
-    category: "Soups",
-    image:
-      "https://images.pexels.com/photos/18602040/pexels-photo-18602040/free-photo-of-top-view-of-delicious-fish-stew-served-in-a-casserole-on-a-wooden-table.jpeg?auto=compress&cs=tinysrgb&w=800",
-    soldOut: false,
-  },
-  {
-    id: "bbq-platter",
-    name: "BBQ Platter",
-    description: "Grilled wings, sausages & skewers with fries.",
-    price: 5200,
-    category: "Grills",
-    image:
-      "https://images.pexels.com/photos/1128678/pexels-photo-1128678.jpeg?auto=compress&cs=tinysrgb&w=800",
-    soldOut: true,
-  },
-  {
-    id: "drinks-combo",
-    name: "Drinks Combo",
-    description: "Chilled soft drinks & bottled water for two.",
-    price: 1500,
-    category: "Drinks",
-    image:
-      "https://images.pexels.com/photos/5531529/pexels-photo-5531529.jpeg?auto=compress&cs=tinysrgb&w=800",
-    soldOut: false,
-  },
-];
+let MENU_ITEMS = []; // will be filled from Firestore
+
 
 // Utilities
 const formatPrice = (value) => `₦${Number(value || 0).toLocaleString("en-NG")}`;
@@ -212,6 +112,17 @@ const spawnPlusOne = (x, y) => {
   setTimeout(() => bubble.remove(), 450);
 };
 
+const PLACEHOLDER_IMAGES = [
+  "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg",
+  "https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg",
+  "https://images.pexels.com/photos/461198/pexels-photo-461198.jpeg",
+  "https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg",
+];
+
+const getRandomImage = () =>
+  PLACEHOLDER_IMAGES[Math.floor(Math.random() * PLACEHOLDER_IMAGES.length)];
+
+
 // Menu rendering
 const initMenuPage = () => {
   const grid = document.getElementById("menu-grid");
@@ -223,25 +134,54 @@ const initMenuPage = () => {
   let activeCategory = "All";
   let queryText = "";
 
-  const categories = ["All", ...Array.from(new Set(MENU_ITEMS.map((m) => m.category)))];
+  const getCategories = () => {
+  const cats = MENU_ITEMS.map(i => i.category).filter(Boolean);
+  return ["All", ...new Set(cats)];
+};
+
+
+  const menusQuery = query(
+  collection(db, "menus"),
+  orderBy("createdAt", "asc")
+);
+
+onSnapshot(menusQuery, (snapshot) => {
+  MENU_ITEMS = snapshot.docs.map(doc => ({
+  id: doc.id,
+  name: doc.data().name,
+  price: doc.data().price,
+  category: doc.data().section,
+  image: doc.data().image || getRandomImage(),
+  soldOut: doc.data().status === "sold-out",
+}));
+
+  renderTabs();
+  renderGrid();
+});
+
+
 
   const renderTabs = () => {
-    tabsContainer.innerHTML = "";
-    categories.forEach((cat) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "menu-tab" + (cat === activeCategory ? " is-active" : "");
-      btn.textContent = cat;
-      btn.addEventListener("click", () => {
-        activeCategory = cat;
-        document
-          .querySelectorAll(".menu-tab")
-          .forEach((el) => el.classList.toggle("is-active", el === btn));
-        renderGrid();
-      });
-      tabsContainer.appendChild(btn);
-    });
-  };
+  tabsContainer.innerHTML = "";
+
+  getCategories().forEach((cat) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "menu-tab" + (cat === activeCategory ? " is-active" : "");
+    btn.textContent = cat;
+
+    btn.onclick = () => {
+      activeCategory = cat;
+      document
+        .querySelectorAll(".menu-tab")
+        .forEach(el => el.classList.toggle("is-active", el === btn));
+      renderGrid();
+    };
+
+    tabsContainer.appendChild(btn);
+  });
+};
+
 
   const renderGrid = () => {
     grid.innerHTML = "";
@@ -249,9 +189,10 @@ const initMenuPage = () => {
     const filtered = MENU_ITEMS.filter((item) => {
       const matchesCat = activeCategory === "All" || item.category === activeCategory;
       const matchesQuery =
-        !queryText ||
-        item.name.toLowerCase().includes(queryText) ||
-        item.description.toLowerCase().includes(queryText);
+  !queryText ||
+  item.name.toLowerCase().includes(queryText) ||
+  (item.description || "").toLowerCase().includes(queryText);
+
       return matchesCat && matchesQuery;
     });
 
@@ -290,7 +231,8 @@ const initMenuPage = () => {
       title.textContent = item.name;
 
       const desc = document.createElement("p");
-      desc.textContent = item.description;
+      desc.textContent = item.description || "";
+
 
       const meta = document.createElement("div");
       meta.className = "menu-card-meta";
