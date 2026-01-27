@@ -8,10 +8,15 @@
 
 /* Full width shell */
 .page-admin .page-shell {
-  max-width: 100%;
-  margin: 0;
-  padding: 16px 24px;
+  max-width: 1200px; /* 👈 tighter */
+  margin: 0 auto;
+  padding: 24px 16px;
 }
+
+.page-admin .section {
+  margin-bottom: 24px;
+}
+
 
 /* Kill mobile layout assumptions */
 .page-admin .section-stack {
