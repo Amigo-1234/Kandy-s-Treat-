@@ -2,6 +2,7 @@
 
 // Firebase (CDN module imports)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+// Firestore
 import {
   getFirestore,
   doc,
@@ -14,6 +15,14 @@ import {
   updateDoc,
   getDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+// Messaging
+import {
+  getMessaging,
+  getToken,
+  onMessage
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js";
+
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -34,6 +43,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const messaging = getMessaging(app);
+
 
 window.db = db; // for debugging
 window.auth = auth; // for debugging
@@ -47,6 +58,22 @@ const ORDER_STATUSES = ["New", "Preparing", "Out", "Completed"];
 // Mock menu data
 // TODO: Firestore: fetch menu
 let MENU_ITEMS = []; // will be filled from Firestore
+
+async function requestNotificationToken() {
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return null;
+
+    const token = await getToken(messaging, {
+      vapidKey: "BDOZiSxAx_7P0JoHWv_UQOW8xIdpez_4RTAwnYTE-QNJAPS6CRmM2XbbT3K409uwDoCu4ebxPjXFRqQoMyRcGwg",
+    });
+
+    return token;
+  } catch (err) {
+    console.error("Notification permission failed", err);
+    return null;
+  }
+}
 
 
 // Utilities
@@ -503,9 +530,13 @@ const initCartPage = () => {
       status: "New",
     };
 
+    const notificationToken = await requestNotificationToken();
+
+
     try {
       await setDoc(doc(db, "orders", order.id), {
         ...order,
+        notificationToken,
         createdAt: serverTimestamp(),
       });
     } catch (err) {
@@ -580,6 +611,27 @@ const initCartPage = () => {
 
   render();
 };
+
+onSnapshot(
+  query(collection(db, "orders")),
+  snap => {
+    snap.docChanges().forEach(change => {
+      if (change.type !== "modified") return;
+
+      const data = change.doc.data();
+      if (data.status === "Out" && data.notificationToken) {
+        sendLocalNotification(data);
+      }
+    });
+  }
+);
+
+function sendLocalNotification(order) {
+  new Notification("Your order is on the way 🚴‍♂️", {
+    body: `Order ${order.id} is out for delivery`,
+    icon: "/icon.png",
+  });
+}
 
 // Admin page (UPDATED: Firebase Auth + Firestore real-time)
 const initAdminPage = () => {
