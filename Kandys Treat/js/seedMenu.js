@@ -1,19 +1,21 @@
 import {
   collection,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  getDocs,
+  deleteDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const menusRef = collection(window.db, "menus");
 
 const MENU_DATA = [
-  // 🍚 Rice & Swallow
-  { section: "Rice & Swallow", name: "Jollof Rice (per scoop)", price: 500 },
-  { section: "Rice & Swallow", name: "Fried Rice (per scoop)", price: 500 },
-  { section: "Rice & Swallow", name: "Spaghetti (per scoop)", price: 500 },
-  { section: "Rice & Swallow", name: "White Rice", price: 700 },
-  { section: "Rice & Swallow", name: "Ofada Rice", price: 700 },
-  { section: "Rice & Swallow", name: "Beans", price: 600 },
+  // 🍽️ Foods
+  { section: "Foods", name: "Jollof Rice (per scoop)", price: 500 },
+  { section: "Foods", name: "Fried Rice (per scoop)", price: 500 },
+  { section: "Foods", name: "Spaghetti (per scoop)", price: 500 },
+  { section: "Foods", name: "White Rice (per scoop)", price: 700 },
+  { section: "Foods", name: "Ofada Rice (per scoop)", price: 700 },
+  { section: "Foods", name: "Beans (per scoop)", price: 600 },
 
   // 🍗 Proteins
   { section: "Proteins", name: "Big Chicken", price: 2500 },
@@ -25,7 +27,7 @@ const MENU_DATA = [
   { section: "Proteins", name: "Small Turkey", price: 3000 },
   { section: "Proteins", name: "Big Turkey", price: 3500 },
 
-  // 🥗 Sides & Extras
+  // 🥗 Sides
   { section: "Sides", name: "Plantain", price: 350 },
   { section: "Sides", name: "Takeaway Pack", price: 200 },
   { section: "Sides", name: "Salad (Single Cream)", price: 700 },
@@ -68,6 +70,13 @@ const MENU_DATA = [
 ];
 
 async function seedMenu() {
+  // 🔥 Clear existing menu
+  const snap = await getDocs(menusRef);
+  for (const doc of snap.docs) {
+    await deleteDoc(doc.ref);
+  }
+
+  // 🌱 Seed new menu
   for (const item of MENU_DATA) {
     await addDoc(menusRef, {
       ...item,
@@ -78,7 +87,7 @@ async function seedMenu() {
     });
   }
 
-  alert("Menu seeded successfully 🚀");
+  alert("Foods section updated & menu reseeded ✅");
 }
 
 window.seedMenu = seedMenu;

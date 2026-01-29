@@ -1,64 +1,186 @@
-import express from "express";
-import cors from "cors";
-import fetch from "node-fetch";
 
-const app = express();
-const PORT = 4000;
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  serverTimestamp,
+  query,
+  orderBy,
+  doc,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-// 🔥 Middleware
-app.use(cors());
-app.use(express.json());
+document.addEventListener("DOMContentLoaded", () => {
+  const sectionsEl = document.getElementById("menu-sections");
+  const itemsEl = document.getElementById("menu-item-list");
+  const addSectionBtn = document.getElementById("add-menu-section");
+  const addItemBtn = document.getElementById("add-menu-item");
+  const titleEl = document.getElementById("active-menu-title");
 
-// 🔐 Termii config
-const TERMII_API_KEY = "PUT_YOUR_TERMII_API_KEY_HERE";
-const SENDER_ID = "KANDYSTREAT";
+  const menusRef = collection(window.db, "menus");
+  const menusQuery = query(menusRef, orderBy("createdAt", "asc"));
 
-// ✅ Health check
-app.get("/", (req, res) => {
-  res.send("SMS server running ✅");
-});
+  let activeSection = null;
+  let menuItems = [];
 
-// ✅ SEND SMS ENDPOINT
-app.post("/send-sms", async (req, res) => {
-  const { phone, orderId } = req.body;
+  /* ---------------- LISTEN ---------------- */
+  onSnapshot(menusQuery, (snap) => {
+    menuItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  if (!phone || !orderId) {
-    return res.status(400).json({ error: "phone and orderId required" });
+    if (!activeSection && menuItems.length) {
+      activeSection = menuItems[0].section;
+      titleEl.textContent = activeSection;
+    }
+
+    renderSections();
+    renderItems();
+  });
+
+  /* ---------------- SECTIONS ---------------- */
+  function renderSections() {
+    sectionsEl.innerHTML = "";
+
+    const sections = [...new Set(menuItems.map(i => i.section))];
+
+    sections.forEach(section => {
+      const btn = document.createElement("button");
+      btn.className =
+        "menu-section" + (section === activeSection ? " is-active" : "");
+      btn.textContent = section;
+
+      btn.onclick = () => {
+        activeSection = section;
+        titleEl.textContent = section;
+        renderSections();
+        renderItems();
+      };
+
+      sectionsEl.appendChild(btn);
+    });
   }
 
-  const cleanPhone = phone.replace(/\D/g, "");
+  /* ---------------- ITEMS ---------------- */
+  function renderItems() {
+    itemsEl.innerHTML = "";
 
-  const message =
-    `Kandy’s Treats 🍽️\n` +
-    `Your order ${orderId} is on the way 🚴\n` +
-    `Track here: http://127.0.0.1:5501/track.html?code=${orderId}`;
+    const items = menuItems.filter(i => i.section === activeSection);
 
-  try {
-    const response = await fetch("https://api.ng.termii.com/api/sms/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        to: cleanPhone,
-        from: SENDER_ID,
-        sms: message,
-        type: "plain",
-        channel: "generic",
-        api_key: TLWNFsKWnzgQshPfMGkyHEOYEkEbbRDNMhetQIUdqVoerCFSgogKqngYUNmCka,
-      }),
+    items.forEach(item => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>
+          <input class="name-input" value="${item.name}" />
+        </td>
+
+        <td>
+          <input type="number" class="price-input" value="${item.price}" />
+        </td>
+
+        <td>
+          <button class="status-toggle ${
+            item.status === "available" ? "on" : "off"
+          }">
+            ${item.status === "available" ? "Available" : "Sold out"}
+          </button>
+        </td>
+
+        <td class="actions">
+          <button class="btn btn-ghost btn-sm save-btn">Save</button>
+          <button class="btn btn-ghost btn-sm delete-btn">🗑️</button>
+        </td>
+      `;
+
+      const nameInput = tr.querySelector(".name-input");
+      const priceInput = tr.querySelector(".price-input");
+      const statusBtn = tr.querySelector(".status-toggle");
+      const saveBtn = tr.querySelector(".save-btn");
+      const deleteBtn = tr.querySelector(".delete-btn");
+
+      let draft = {
+        name: item.name,
+        price: item.price,
+        status: item.status,
+      };
+
+      nameInput.oninput = () => {
+        draft.name = nameInput.value.trim();
+      };
+
+      priceInput.oninput = () => {
+        draft.price = Number(priceInput.value);
+      };
+
+      statusBtn.onclick = () => {
+        draft.status =
+          draft.status === "available" ? "sold-out" : "available";
+
+        statusBtn.textContent =
+          draft.status === "available" ? "Available" : "Sold out";
+
+        statusBtn.classList.toggle("on", draft.status === "available");
+        statusBtn.classList.toggle("off", draft.status === "sold-out");
+      };
+
+      saveBtn.onclick = async () => {
+        await updateDoc(doc(window.db, "menus", item.id), {
+          ...draft,
+          updatedAt: serverTimestamp(),
+        });
+
+        saveBtn.textContent = "Saved";
+        setTimeout(() => (saveBtn.textContent = "Save"), 700);
+      };
+
+      deleteBtn.onclick = async () => {
+        if (!confirm(`Delete "${item.name}"?`)) return;
+        await deleteDoc(doc(window.db, "menus", item.id));
+      };
+
+      itemsEl.appendChild(tr);
+    });
+  }
+
+  /* ---------------- ADD SECTION ---------------- */
+  addSectionBtn.onclick = async () => {
+    const name = prompt("Menu section name?");
+    if (!name) return;
+
+    activeSection = name;
+    titleEl.textContent = name;
+
+    const ref = await addDoc(menusRef, {
+      name: "New Dish",
+      price: 0,
+      status: "available",
+      section: name,
+      image: "",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
 
-    const data = await response.json();
+    await updateDoc(ref, {
+      image: `https://picsum.photos/seed/${ref.id}/600/400`,
+    });
+  };
 
-    console.log("📨 Termii response:", data);
+  /* ---------------- ADD ITEM ---------------- */
+  addItemBtn.onclick = async () => {
+    if (!activeSection) return;
 
-    res.json({ success: true, termii: data });
-  } catch (err) {
-    console.error("❌ SMS failed", err);
-    res.status(500).json({ error: "SMS failed" });
-  }
-});
+    const ref = await addDoc(menusRef, {
+      name: "New Dish",
+      price: 0,
+      status: "available",
+      section: activeSection,
+      image: "",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
 
-// 🚀 Start server
-app.listen(PORT, () => {
-  console.log(`🚀 SMS server running at http://localhost:${PORT}`);
+    await updateDoc(ref, {
+      image: `https://picsum.photos/seed/${ref.id}/600/400`,
+    });
+  };
 });

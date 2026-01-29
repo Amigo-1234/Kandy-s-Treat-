@@ -369,7 +369,9 @@ const initCartPage = () => {
 
   if (!itemsContainer || !subtotalEl) return;
 
-  const DELIVERY_FEE = 800;
+  const DELIVERY_FEE = 500;
+  const TAKEAWAY_FEE = 300;
+
 
   const render = () => {
     const cart = readCart();
@@ -379,97 +381,126 @@ const initCartPage = () => {
 
     let subtotal = 0;
 
-    ids.forEach((id) => {
-      const item = cart[id];
-      subtotal += item.price * item.qty;
+ ids.forEach((id) => {
+  const item = cart[id];
+  subtotal += item.price * item.qty;
 
-      const row = document.createElement("div");
-      row.className = "cart-item";
+  const row = document.createElement("div");
+  row.className = "cart-item";
 
-      const main = document.createElement("div");
-      main.className = "cart-item-main";
+  const main = document.createElement("div");
+  main.className = "cart-item-main";
 
-      const title = document.createElement("div");
-      title.className = "cart-item-title";
-      title.textContent = item.name;
+  const title = document.createElement("div");
+  title.className = "cart-item-title";
+  title.textContent = item.name;
 
-      const meta = document.createElement("div");
-      meta.className = "cart-item-meta";
-      meta.innerHTML = `<span>${item.qty} × ${formatPrice(item.price)}</span><span>${formatPrice(
-        item.price * item.qty
-      )}</span>`;
+  const meta = document.createElement("div");
+  meta.className = "cart-item-meta";
+  meta.innerHTML = `
+    <span>${item.qty} × ${formatPrice(item.price)}</span>
+    <span>${formatPrice(item.price * item.qty)}</span>
+  `;
 
-      main.append(title, meta);
+  main.append(title, meta);
 
-      const actions = document.createElement("div");
-      actions.className = "cart-item-actions";
+  const actions = document.createElement("div");
+  actions.className = "cart-item-actions";
 
-      const qtyGroup = document.createElement("div");
-      qtyGroup.className = "qty-group";
+  const qtyGroup = document.createElement("div");
+  qtyGroup.className = "qty-group";
 
-      const minus = document.createElement("button");
-      minus.type = "button";
-      minus.className = "qty-btn";
-      minus.textContent = "−";
+  const minus = document.createElement("button");
+  minus.type = "button";
+  minus.className = "qty-btn";
+  minus.textContent = "−";
 
-      const val = document.createElement("span");
-      val.className = "qty-value";
-      val.textContent = String(item.qty);
+  const val = document.createElement("span");
+  val.className = "qty-value";
+  val.textContent = String(item.qty);
 
-      const plus = document.createElement("button");
-      plus.type = "button";
-      plus.className = "qty-btn";
-      plus.textContent = "+";
+  const plus = document.createElement("button");
+  plus.type = "button";
+  plus.className = "qty-btn";
+  plus.textContent = "+";
 
-      qtyGroup.append(minus, val, plus);
+  qtyGroup.append(minus, val, plus);
 
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "cart-item-remove";
-      remove.textContent = "Remove";
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "cart-item-remove";
+  remove.textContent = "Remove";
 
-      plus.addEventListener("click", () => {
-        const cartState = readCart();
-        cartState[id].qty += 1;
-        saveCart(cartState);
-        render();
-      });
+  plus.addEventListener("click", () => {
+    const cartState = readCart();
+    cartState[id].qty += 1;
+    saveCart(cartState);
+    render();
+  });
 
-      minus.addEventListener("click", () => {
-        const cartState = readCart();
-        cartState[id].qty -= 1;
-        if (cartState[id].qty <= 0) delete cartState[id];
-        saveCart(cartState);
-        render();
-      });
+  minus.addEventListener("click", () => {
+    const cartState = readCart();
+    cartState[id].qty -= 1;
+    if (cartState[id].qty <= 0) delete cartState[id];
+    saveCart(cartState);
+    render();
+  });
 
-      remove.addEventListener("click", () => {
-        const cartState = readCart();
-        delete cartState[id];
-        saveCart(cartState);
-        showToast(`Removed ${item.name} from cart`);
-        render();
-      });
+  remove.addEventListener("click", () => {
+    const cartState = readCart();
+    delete cartState[id];
+    saveCart(cartState);
+    showToast(`Removed ${item.name} from cart`);
+    render();
+  });
 
-      actions.append(qtyGroup, remove);
-      row.append(main, actions);
-      itemsContainer.appendChild(row);
+  actions.append(qtyGroup, remove);
+  row.append(main, actions);
+  itemsContainer.appendChild(row);
 
-      requestAnimationFrame(() => {
-        row.style.opacity = "0";
-        row.style.transform = "translateY(6px)";
-        row.style.transition = "opacity 200ms var(--easing-soft), transform 200ms var(--easing-soft)";
-        requestAnimationFrame(() => {
-          row.style.opacity = "1";
-          row.style.transform = "translateY(0)";
-        });
-      });
+  requestAnimationFrame(() => {
+    row.style.opacity = "0";
+    row.style.transform = "translateY(6px)";
+    row.style.transition =
+      "opacity 200ms var(--easing-soft), transform 200ms var(--easing-soft)";
+    requestAnimationFrame(() => {
+      row.style.opacity = "1";
+      row.style.transform = "translateY(0)";
     });
+  });
+});
 
-    const deliveryFee = ids.length ? DELIVERY_FEE : 0;
-    subtotalEl.textContent = formatPrice(subtotal);
-    deliveryEl.textContent = formatPrice(deliveryFee);
-    totalEl.textContent = formatPrice(subtotal + deliveryFee);
+// 🔹 Takeaway pack (delivery only)
+const fulfilment =
+  document.querySelector(".toggle-option.is-active")?.dataset.fulfilment ||
+  "delivery";
+
+if (ids.length && fulfilment === "delivery") {
+  const row = document.createElement("div");
+  row.className = "cart-item cart-item-fee";
+
+  row.innerHTML = `
+    <div class="cart-item-main">
+      <div class="cart-item-title">Takeaway Pack</div>
+      <div class="cart-item-meta">
+        <span>1 × ${formatPrice(TAKEAWAY_FEE)}</span>
+        <span>${formatPrice(TAKEAWAY_FEE)}</span>
+      </div>
+    </div>
+  `;
+
+  itemsContainer.appendChild(row);
+}
+
+const deliveryFee =
+  fulfilment === "delivery" && ids.length ? DELIVERY_FEE : 0;
+const takeawayFee =
+  fulfilment === "delivery" && ids.length ? TAKEAWAY_FEE : 0;
+
+subtotalEl.textContent = formatPrice(subtotal);
+deliveryEl.textContent = formatPrice(deliveryFee + takeawayFee);
+totalEl.textContent = formatPrice(subtotal + deliveryFee + takeawayFee);
+
   };
 
   clearBtn?.addEventListener("click", () => {
@@ -508,9 +539,23 @@ const initCartPage = () => {
       "delivery";
 
     const items = ids.map((id) => cart[id]);
+
+if (fulfilment === "delivery") {
+  items.push({
+    id: "takeaway-pack",
+    name: "Takeaway Pack",
+    price: TAKEAWAY_FEE,
+    qty: 1,
+    system: true,
+  });
+}
+
     const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-    const deliveryFee = fulfilment === "delivery" ? DELIVERY_FEE : 0;
-    const total = subtotal + deliveryFee;
+const deliveryFee = fulfilment === "delivery" ? DELIVERY_FEE : 0;
+const takeawayFee = fulfilment === "delivery" ? TAKEAWAY_FEE : 0;
+
+const total = subtotal + deliveryFee + takeawayFee;
+
 
     const order = {
       id: `KD-${Date.now().toString(36).toUpperCase()}`,
@@ -526,6 +571,7 @@ const initCartPage = () => {
       items,
       subtotal,
       deliveryFee,
+      takeawayFee,
       total,
       status: "New",
     };
@@ -1034,7 +1080,10 @@ const initTrackPage = () => {
   });
 
   tSubtotal.textContent = formatPrice(order.subtotal || 0);
-  tDelivery.textContent = formatPrice(order.deliveryFee || 0);
+  tDelivery.textContent = formatPrice(
+  (order.deliveryFee || 0) + (order.takeawayFee || 0)
+);
+
   tTotal.textContent = formatPrice(order.total || 0);
 
   // ✅ THIS LINE MAKES THE GREEN DOT MOVE

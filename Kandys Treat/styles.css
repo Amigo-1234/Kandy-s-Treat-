@@ -1636,3 +1636,12 @@ body[data-page="track"] .track-card {
   background: #22c55e;
   box-shadow: 0 0 14px rgba(34, 197, 94, 0.85);
 }
+
+.cart-item-fee {
+  opacity: 0.85;
+  font-style: italic;
+}
+
+.cart-item-fee .cart-item-actions {
+  display: none;
+}
